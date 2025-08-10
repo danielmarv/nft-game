@@ -91,6 +91,10 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
     onOpenChange(false)
   }
 
+  if (user) {
+    return null
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">

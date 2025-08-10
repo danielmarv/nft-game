@@ -3,66 +3,72 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Heart, Eye, Share2 } from "lucide-react"
-import Image from "next/image"
+import { Heart, Share2, ExternalLink } from "lucide-react"
+import { useState } from "react"
 
-interface NFT {
+interface NFTCardProps {
   id: string
   name: string
   description: string
   image: string
   rarity: "common" | "rare" | "epic" | "legendary"
-  type: string
-  price?: number
-  owner?: string
+  price?: string
+  owned?: boolean
 }
 
-interface NFTCardProps {
-  nft: NFT
-}
+export function NFTCard({ id, name, description, image, rarity, price, owned = false }: NFTCardProps) {
+  const [isLiked, setIsLiked] = useState(false)
 
-const rarityColors = {
-  common: "bg-gray-500",
-  rare: "bg-blue-500",
-  epic: "bg-purple-500",
-  legendary: "bg-yellow-500",
-}
+  const rarityColors = {
+    common: "bg-gray-500",
+    rare: "bg-blue-500",
+    epic: "bg-purple-500",
+    legendary: "bg-yellow-500",
+  }
 
-export function NFTCard({ nft }: NFTCardProps) {
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-      <div className="relative aspect-square">
-        <Image
-          src={nft.image || "/placeholder.svg?height=300&width=300&query=nft card"}
-          alt={nft.name}
-          fill
-          className="object-cover"
+    <Card className="group hover:shadow-lg transition-all duration-300 overflow-hidden">
+      <div className="relative">
+        <img
+          src={image || `/placeholder.svg?height=200&width=200&query=${name}`}
+          alt={name}
+          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
         />
-        <div className="absolute top-2 right-2">
-          <Badge className={`${rarityColors[nft.rarity]} text-white`}>{nft.rarity}</Badge>
+        <div className="absolute top-2 right-2 flex gap-2">
+          <Badge className={`${rarityColors[rarity]} text-white`}>
+            {rarity.charAt(0).toUpperCase() + rarity.slice(1)}
+          </Badge>
+          {owned && <Badge variant="secondary">Owned</Badge>}
         </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-2 left-2 bg-black/20 hover:bg-black/40"
+          onClick={() => setIsLiked(!isLiked)}
+        >
+          <Heart className={`h-4 w-4 ${isLiked ? "fill-red-500 text-red-500" : "text-white"}`} />
+        </Button>
       </div>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg">{nft.name}</CardTitle>
-        <CardDescription className="text-sm line-clamp-2">{nft.description}</CardDescription>
+
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg">{name}</CardTitle>
+        <CardDescription className="line-clamp-2">{description}</CardDescription>
       </CardHeader>
+
       <CardContent className="pt-0">
-        <div className="flex items-center justify-between mb-3">
-          <Badge variant="outline">{nft.type}</Badge>
-          {nft.price && <span className="text-sm font-medium">{nft.price} ETH</span>}
+        <div className="flex items-center justify-between">
+          {price && <div className="text-lg font-semibold text-primary">{price} HBAR</div>}
+          <div className="flex gap-2">
+            <Button variant="ghost" size="icon">
+              <Share2 className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon">
+              <ExternalLink className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" className="flex-1 bg-transparent">
-            <Eye className="h-3 w-3 mr-1" />
-            View
-          </Button>
-          <Button size="sm" variant="outline">
-            <Heart className="h-3 w-3" />
-          </Button>
-          <Button size="sm" variant="outline">
-            <Share2 className="h-3 w-3" />
-          </Button>
-        </div>
+
+        {!owned && price && <Button className="w-full mt-3">Buy Now</Button>}
       </CardContent>
     </Card>
   )

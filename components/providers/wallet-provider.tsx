@@ -1,52 +1,111 @@
 "use client"
 
-import { createContext, useContext, useState, type ReactNode } from "react"
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
+import { HederaSessionEvent, HederaJsonRpcMethod, DAppConnector, HederaChainId } from "@hashgraph/hedera-wallet-connect"
+import { LedgerId } from "@hashgraph/sdk"
 
 interface WalletContextType {
-  isConnected: boolean
-  address: string | null
-  connect: (walletId: string) => Promise<void>
+  connectedAccount: string | null
+  isConnecting: boolean
+  connect: () => Promise<void>
   disconnect: () => void
+  dAppConnector: DAppConnector | null
 }
 
-const WalletContext = createContext<WalletContextType | undefined>(undefined)
+const WalletContext = createContext<WalletContextType | null>(null)
+
+export function useWalletContext() {
+  const context = useContext(WalletContext)
+  if (!context) {
+    throw new Error("useWalletContext must be used within WalletProvider")
+  }
+  return context
+}
 
 export function WalletProvider({ children }: { children: ReactNode }) {
-  const [isConnected, setIsConnected] = useState(false)
-  const [address, setAddress] = useState<string | null>(null)
+  const [connectedAccount, setConnectedAccount] = useState<string | null>(null)
+  const [isConnecting, setIsConnecting] = useState(false)
+  const [dAppConnector, setDAppConnector] = useState<DAppConnector | null>(null)
 
-  const connect = async (walletId: string) => {
+  useEffect(() => {
+    const initializeConnector = async () => {
+      try {
+        const metadata = {
+          name: "Hedera Gaming Platform",
+          description: "A Web3 gaming platform built on Hedera",
+          url: window.location.origin,
+          icons: [`${window.location.origin}/favicon.ico`],
+        }
+
+        const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "demo-project-id"
+
+        const connector = new DAppConnector(
+          metadata,
+          LedgerId.TESTNET, // Use TESTNET for development
+          projectId,
+          Object.values(HederaJsonRpcMethod),
+          [HederaSessionEvent.ChainChanged, HederaSessionEvent.AccountsChanged],
+          [HederaChainId.Testnet], // Use Testnet for development
+        )
+
+        await connector.init({ logger: "error" })
+        setDAppConnector(connector)
+
+        // Check for existing session
+        const existingSession = connector.signers?.[0]
+        if (existingSession) {
+          setConnectedAccount(existingSession.getAccountId()?.toString() || null)
+        }
+
+        // Listen for session events
+        connector.onSessionIframeCreated = (session) => {
+          console.log("Session created:", session)
+        }
+      } catch (error) {
+        console.error("Failed to initialize DApp connector:", error)
+      }
+    }
+
+    initializeConnector()
+  }, [])
+
+  const connect = async () => {
+    if (!dAppConnector) {
+      throw new Error("DApp connector not initialized")
+    }
+
     try {
-      // Mock wallet connection - replace with actual wallet integration
-      if (walletId === "metamask") {
-        // Simulate MetaMask connection
-        setAddress("0x1234567890123456789012345678901234567890")
-        setIsConnected(true)
-      } else if (walletId === "walletconnect") {
-        // Simulate WalletConnect connection
-        setAddress("0x0987654321098765432109876543210987654321")
-        setIsConnected(true)
+      setIsConnecting(true)
+      await dAppConnector.openModal()
+
+      // Wait for connection
+      const signer = dAppConnector.signers?.[0]
+      if (signer) {
+        const accountId = signer.getAccountId()?.toString()
+        setConnectedAccount(accountId || null)
       }
     } catch (error) {
-      console.error("Failed to connect wallet:", error)
+      console.error("Wallet connection failed:", error)
       throw error
+    } finally {
+      setIsConnecting(false)
     }
   }
 
   const disconnect = () => {
-    setIsConnected(false)
-    setAddress(null)
+    if (dAppConnector) {
+      dAppConnector.disconnectAll()
+    }
+    setConnectedAccount(null)
   }
 
-  return (
-    <WalletContext.Provider value={{ isConnected, address, connect, disconnect }}>{children}</WalletContext.Provider>
-  )
-}
-
-export function useWallet() {
-  const context = useContext(WalletContext)
-  if (context === undefined) {
-    throw new Error("useWallet must be used within a WalletProvider")
+  const value: WalletContextType = {
+    connectedAccount,
+    isConnecting,
+    connect,
+    disconnect,
+    dAppConnector,
   }
-  return context
+
+  return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>
 }
