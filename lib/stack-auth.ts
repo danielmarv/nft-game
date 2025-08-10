@@ -1,13 +1,6 @@
-"use client"
+import "server-only"
+import { StackServerApp } from "@stackframe/stack"
 
-import { StackClientApp } from "@stackframe/stack"
-
-export const stackServerApp = new StackClientApp({
-  tokenStore: "nextjs-cookie",
-  urls: {
-    signIn: "/auth/signin",
-    afterSignIn: "/",
-    afterSignUp: "/",
-    signUp: "/auth/signup",
-  },
+export const stackServerApp = new StackServerApp({
+  tokenStore: "nextjs-cookie", // storing auth tokens in cookies
 })
