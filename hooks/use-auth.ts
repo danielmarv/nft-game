@@ -1,7 +1,13 @@
 "use client"
 
-import { useAuthContext } from "@/components/providers/auth-provider"
+import { useUser } from "@stackframe/stack"
 
 export function useAuth() {
-  return useAuthContext()
+  const user = useUser()
+
+  return {
+    user,
+    isAuthenticated: !!user,
+    isLoading: false, // StackAuth handles loading states internally
+  }
 }

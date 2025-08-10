@@ -8,10 +8,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Eye, EyeOff, Mail, Lock, User, Sparkles, LogIn, UserPlus } from "lucide-react"
+import { Eye, EyeOff, Mail, Lock, User, Sparkles } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { toast } from "@/hooks/use-toast"
 import { useUser } from "@stackframe/stack"
+import Link from "next/link"
+import { UserPlus, LogIn } from "lucide-react"
 
 interface AuthModalProps {
   open: boolean
@@ -272,13 +274,17 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4 py-4">
-          <Button onClick={handleSignIn} className="w-full gap-2">
-            <LogIn className="h-4 w-4" />
-            Sign In
+          <Button asChild className="w-full">
+            <Link href="/handler/sign-up" onClick={() => onOpenChange(false)}>
+              <UserPlus className="mr-2 h-4 w-4" />
+              Create Account
+            </Link>
           </Button>
-          <Button onClick={handleSignUp} variant="outline" className="w-full gap-2 bg-transparent">
-            <UserPlus className="h-4 w-4" />
-            Create Account
+          <Button variant="outline" asChild className="w-full bg-transparent">
+            <Link href="/handler/sign-in" onClick={() => onOpenChange(false)}>
+              <LogIn className="mr-2 h-4 w-4" />
+              Sign In
+            </Link>
           </Button>
         </div>
       </DialogContent>

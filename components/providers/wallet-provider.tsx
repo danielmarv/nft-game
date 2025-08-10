@@ -1,73 +1,52 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
+import { createContext, useContext, useState, type ReactNode } from "react"
 
 interface WalletContextType {
-  connectedAccount: string | null
-  isConnecting: boolean
-  connect: () => Promise<void>
+  isConnected: boolean
+  address: string | null
+  connect: (walletId: string) => Promise<void>
   disconnect: () => void
-  showQRCode: boolean
-  setShowQRCode: (show: boolean) => void
 }
 
-const WalletContext = createContext<WalletContextType | null>(null)
-
-export function useWalletContext() {
-  const context = useContext(WalletContext)
-  if (!context) {
-    throw new Error("useWalletContext must be used within WalletProvider")
-  }
-  return context
-}
+const WalletContext = createContext<WalletContextType | undefined>(undefined)
 
 export function WalletProvider({ children }: { children: ReactNode }) {
-  const [connectedAccount, setConnectedAccount] = useState<string | null>(null)
-  const [isConnecting, setIsConnecting] = useState(false)
-  const [showQRCode, setShowQRCode] = useState(false)
+  const [isConnected, setIsConnected] = useState(false)
+  const [address, setAddress] = useState<string | null>(null)
 
-  useEffect(() => {
-    // Check for existing wallet connection
-    const storedAccount = localStorage.getItem("connected_wallet")
-    if (storedAccount) {
-      setConnectedAccount(storedAccount)
-    }
-  }, [])
-
-  const connect = async () => {
+  const connect = async (walletId: string) => {
     try {
-      setIsConnecting(true)
-
-      // Mock wallet connection - in real app, integrate with WalletConnect
-      // This would show QR code for mobile or connect to HashPack for desktop
-      await new Promise((resolve) => setTimeout(resolve, 2000)) // Simulate connection delay
-
-      const mockAccount = "0.0.123456"
-      localStorage.setItem("connected_wallet", mockAccount)
-      setConnectedAccount(mockAccount)
-      setShowQRCode(false)
+      // Mock wallet connection - replace with actual wallet integration
+      if (walletId === "metamask") {
+        // Simulate MetaMask connection
+        setAddress("0x1234567890123456789012345678901234567890")
+        setIsConnected(true)
+      } else if (walletId === "walletconnect") {
+        // Simulate WalletConnect connection
+        setAddress("0x0987654321098765432109876543210987654321")
+        setIsConnected(true)
+      }
     } catch (error) {
-      console.error("Wallet connection failed:", error)
+      console.error("Failed to connect wallet:", error)
       throw error
-    } finally {
-      setIsConnecting(false)
     }
   }
 
   const disconnect = () => {
-    localStorage.removeItem("connected_wallet")
-    setConnectedAccount(null)
-    setShowQRCode(false)
+    setIsConnected(false)
+    setAddress(null)
   }
 
-  const value: WalletContextType = {
-    connectedAccount,
-    isConnecting,
-    connect,
-    disconnect,
-    showQRCode,
-    setShowQRCode,
-  }
+  return (
+    <WalletContext.Provider value={{ isConnected, address, connect, disconnect }}>{children}</WalletContext.Provider>
+  )
+}
 
-  return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>
+export function useWallet() {
+  const context = useContext(WalletContext)
+  if (context === undefined) {
+    throw new Error("useWallet must be used within a WalletProvider")
+  }
+  return context
 }

@@ -1,104 +1,100 @@
 "use client"
 
-import { useState } from "react"
-import { motion } from "framer-motion"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { RotateCcw } from "lucide-react"
-import { Canvas } from "@react-three/fiber"
-import { OrbitControls, Environment } from "@react-three/drei"
-import { Card3D } from "@/components/3d/card-3d"
+import { Sword, Shield, Zap } from "lucide-react"
+import Image from "next/image"
 
 interface GameCard {
   id: string
   name: string
-  rarity: string
-  type: string
-  image: string
   description: string
+  image: string
+  rarity: "common" | "rare" | "epic" | "legendary"
+  type: "fire" | "water" | "earth" | "air"
+  attack: number
+  defense: number
+  cost: number
 }
 
 interface CardGalleryProps {
   cards: GameCard[]
 }
 
+const rarityColors = {
+  common: "bg-gray-500",
+  rare: "bg-blue-500",
+  epic: "bg-purple-500",
+  legendary: "bg-yellow-500",
+}
+
+const typeColors = {
+  fire: "text-red-500",
+  water: "text-blue-500",
+  earth: "text-green-500",
+  air: "text-purple-500",
+}
+
 export function CardGallery({ cards }: CardGalleryProps) {
-  const [flippedCards, setFlippedCards] = useState<Set<string>>(new Set())
-
-  const toggleCardFlip = (cardId: string) => {
-    setFlippedCards((prev) => {
-      const newSet = new Set(prev)
-      if (newSet.has(cardId)) {
-        newSet.delete(cardId)
-      } else {
-        newSet.add(cardId)
-      }
-      return newSet
-    })
-  }
-
-  const flipAllCards = () => {
-    if (flippedCards.size === cards.length) {
-      setFlippedCards(new Set())
-    } else {
-      setFlippedCards(new Set(cards.map((card) => card.id)))
-    }
-  }
-
   if (cards.length === 0) {
     return (
-      <Card>
-        <CardContent className="text-center py-12">
-          <div className="text-6xl mb-4">🃏</div>
-          <p className="text-muted-foreground">No cards found</p>
-        </CardContent>
-      </Card>
+      <div className="text-center py-8">
+        <div className="text-6xl mb-4">🃏</div>
+        <h3 className="text-lg font-semibold mb-2">No Cards Yet</h3>
+        <p className="text-muted-foreground mb-4">Open card packs to start building your collection!</p>
+        <Button>Open First Pack</Button>
+      </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Your Card Collection</h3>
-        <Button onClick={flipAllCards} variant="outline" size="sm">
-          <RotateCcw className="h-4 w-4 mr-2" />
-          {flippedCards.size === cards.length ? "Flip All Back" : "Flip All Cards"}
-        </Button>
-      </div>
-
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {cards.map((card, index) => (
-          <motion.div
-            key={card.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-          >
-            <Card className="overflow-hidden">
-              <div className="h-48 bg-gradient-to-br from-muted to-muted/50">
-                <Canvas camera={{ position: [0, 0, 4], fov: 50 }}>
-                  <ambientLight intensity={0.6} />
-                  <pointLight position={[5, 5, 5]} />
-                  <Card3D card={card} isFlipped={flippedCards.has(card.id)} onFlip={() => toggleCardFlip(card.id)} />
-                  <Environment preset="studio" />
-                  <OrbitControls enablePan={false} enableZoom={false} enableRotate={false} />
-                </Canvas>
-              </div>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-semibold truncate">{card.name}</h4>
-                  <Badge variant="outline" className="text-xs">
-                    {card.rarity}
-                  </Badge>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {cards.map((card) => (
+        <Card key={card.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+          <div className="relative aspect-[3/4]">
+            <Image
+              src={card.image || "/placeholder.svg?height=400&width=300&query=trading card"}
+              alt={card.name}
+              fill
+              className="object-cover"
+            />
+            <div className="absolute top-2 right-2">
+              <Badge className={`${rarityColors[card.rarity]} text-white`}>{card.rarity}</Badge>
+            </div>
+            <div className="absolute top-2 left-2">
+              <Badge variant="outline" className="bg-background/80">
+                <Zap className="h-3 w-3 mr-1" />
+                {card.cost}
+              </Badge>
+            </div>
+          </div>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">{card.name}</CardTitle>
+            <CardDescription className="text-xs line-clamp-2">{card.description}</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="flex items-center justify-between mb-2">
+              <Badge variant="outline" className={typeColors[card.type]}>
+                {card.type}
+              </Badge>
+              <div className="flex items-center gap-2 text-sm">
+                <div className="flex items-center gap-1">
+                  <Sword className="h-3 w-3 text-red-500" />
+                  <span>{card.attack}</span>
                 </div>
-                <p className="text-sm text-muted-foreground mb-2">{card.type}</p>
-                <p className="text-xs text-muted-foreground line-clamp-2">{card.description}</p>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
-      </div>
+                <div className="flex items-center gap-1">
+                  <Shield className="h-3 w-3 text-blue-500" />
+                  <span>{card.defense}</span>
+                </div>
+              </div>
+            </div>
+            <Button size="sm" variant="outline" className="w-full bg-transparent">
+              Add to Deck
+            </Button>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   )
 }

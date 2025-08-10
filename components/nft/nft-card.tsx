@@ -3,8 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ExternalLink, Trophy } from "lucide-react"
-import Link from "next/link"
+import { Heart, Eye, Share2 } from "lucide-react"
 import Image from "next/image"
 
 interface NFT {
@@ -12,72 +11,58 @@ interface NFT {
   name: string
   description: string
   image: string
-  rarity?: string
-  type?: string
-  attributes?: Array<{
-    trait_type: string
-    value: string
-  }>
+  rarity: "common" | "rare" | "epic" | "legendary"
+  type: string
+  price?: number
+  owner?: string
 }
 
 interface NFTCardProps {
   nft: NFT
 }
 
-export function NFTCard({ nft }: NFTCardProps) {
-  const hashscanUrl = `https://hashscan.io/mainnet/token/${nft.id}`
+const rarityColors = {
+  common: "bg-gray-500",
+  rare: "bg-blue-500",
+  epic: "bg-purple-500",
+  legendary: "bg-yellow-500",
+}
 
+export function NFTCard({ nft }: NFTCardProps) {
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-      <div className="aspect-square relative bg-gradient-to-br from-muted to-muted/50">
+      <div className="relative aspect-square">
         <Image
-          src={nft.image || `/placeholder.svg?height=300&width=300&query=${nft.name} NFT`}
+          src={nft.image || "/placeholder.svg?height=300&width=300&query=nft card"}
           alt={nft.name}
           fill
           className="object-cover"
         />
-        {nft.rarity && (
-          <Badge variant="secondary" className="absolute top-2 right-2">
-            {nft.rarity}
-          </Badge>
-        )}
-      </div>
-
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg truncate">{nft.name}</CardTitle>
-          <Trophy className="h-4 w-4 text-primary flex-shrink-0" />
+        <div className="absolute top-2 right-2">
+          <Badge className={`${rarityColors[nft.rarity]} text-white`}>{nft.rarity}</Badge>
         </div>
-        {nft.type && <CardDescription>{nft.type}</CardDescription>}
+      </div>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg">{nft.name}</CardTitle>
+        <CardDescription className="text-sm line-clamp-2">{nft.description}</CardDescription>
       </CardHeader>
-
-      <CardContent className="space-y-3">
-        <p className="text-sm text-muted-foreground line-clamp-2">{nft.description}</p>
-
-        {nft.attributes && nft.attributes.length > 0 && (
-          <div className="space-y-1">
-            <p className="text-xs font-medium">Attributes:</p>
-            <div className="flex flex-wrap gap-1">
-              {nft.attributes.slice(0, 3).map((attr, index) => (
-                <Badge key={index} variant="outline" className="text-xs">
-                  {attr.trait_type}: {attr.value}
-                </Badge>
-              ))}
-              {nft.attributes.length > 3 && (
-                <Badge variant="outline" className="text-xs">
-                  +{nft.attributes.length - 3} more
-                </Badge>
-              )}
-            </div>
-          </div>
-        )}
-
-        <Button variant="outline" size="sm" className="w-full bg-transparent" asChild>
-          <Link href={hashscanUrl} target="_blank" rel="noopener noreferrer">
-            <ExternalLink className="h-3 w-3 mr-2" />
-            View on HashScan
-          </Link>
-        </Button>
+      <CardContent className="pt-0">
+        <div className="flex items-center justify-between mb-3">
+          <Badge variant="outline">{nft.type}</Badge>
+          {nft.price && <span className="text-sm font-medium">{nft.price} ETH</span>}
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" className="flex-1 bg-transparent">
+            <Eye className="h-3 w-3 mr-1" />
+            View
+          </Button>
+          <Button size="sm" variant="outline">
+            <Heart className="h-3 w-3" />
+          </Button>
+          <Button size="sm" variant="outline">
+            <Share2 className="h-3 w-3" />
+          </Button>
+        </div>
       </CardContent>
     </Card>
   )
