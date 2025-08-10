@@ -1,75 +1,55 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Heart, Share2, ExternalLink } from "lucide-react"
-import { useState } from "react"
+import Image from "next/image"
 
-interface NFTCardProps {
-  id: string
+interface NftCardProps {
   name: string
   description: string
-  image: string
-  rarity: "common" | "rare" | "epic" | "legendary"
-  price?: string
-  owned?: boolean
+  imageUrl: string
+  price: string
+  owner: string
+  onBuy?: () => void
 }
 
-export function NFTCard({ id, name, description, image, rarity, price, owned = false }: NFTCardProps) {
-  const [isLiked, setIsLiked] = useState(false)
-
-  const rarityColors = {
-    common: "bg-gray-500",
-    rare: "bg-blue-500",
-    epic: "bg-purple-500",
-    legendary: "bg-yellow-500",
-  }
-
+export function NftCard({ name, description, imageUrl, price, owner, onBuy }: NftCardProps) {
   return (
-    <Card className="group hover:shadow-lg transition-all duration-300 overflow-hidden">
-      <div className="relative">
-        <img
-          src={image || `/placeholder.svg?height=200&width=200&query=${name}`}
-          alt={name}
-          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-        />
-        <div className="absolute top-2 right-2 flex gap-2">
-          <Badge className={`${rarityColors[rarity]} text-white`}>
-            {rarity.charAt(0).toUpperCase() + rarity.slice(1)}
-          </Badge>
-          {owned && <Badge variant="secondary">Owned</Badge>}
+    <Card className="w-[300px] overflow-hidden">
+      <CardHeader className="p-0">
+        <div className="relative w-full h-48">
+          <Image
+            src={imageUrl || "/placeholder.svg"}
+            alt={name}
+            layout="fill"
+            objectFit="cover"
+            className="rounded-t-lg"
+            quality={100}
+            priority
+          />
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute top-2 left-2 bg-black/20 hover:bg-black/40"
-          onClick={() => setIsLiked(!isLiked)}
-        >
-          <Heart className={`h-4 w-4 ${isLiked ? "fill-red-500 text-red-500" : "text-white"}`} />
-        </Button>
-      </div>
-
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg">{name}</CardTitle>
-        <CardDescription className="line-clamp-2">{description}</CardDescription>
       </CardHeader>
-
-      <CardContent className="pt-0">
-        <div className="flex items-center justify-between">
-          {price && <div className="text-lg font-semibold text-primary">{price} HBAR</div>}
-          <div className="flex gap-2">
-            <Button variant="ghost" size="icon">
-              <Share2 className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon">
-              <ExternalLink className="h-4 w-4" />
-            </Button>
-          </div>
+      <CardContent className="p-4 space-y-2">
+        <CardTitle className="text-xl font-bold">{name}</CardTitle>
+        <CardDescription className="text-sm text-muted-foreground line-clamp-2">{description}</CardDescription>
+        <div className="flex justify-between items-center text-sm">
+          <span className="font-medium">Price:</span>
+          <span className="text-primary font-semibold">{price} HBAR</span>
         </div>
-
-        {!owned && price && <Button className="w-full mt-3">Buy Now</Button>}
+        <div className="flex justify-between items-center text-sm">
+          <span className="font-medium">Owner:</span>
+          <span className="text-muted-foreground">
+            {owner.slice(0, 6)}...{owner.slice(-4)}
+          </span>
+        </div>
       </CardContent>
+      <CardFooter className="p-4 pt-0">
+        {onBuy && (
+          <Button onClick={onBuy} className="w-full">
+            Buy Now
+          </Button>
+        )}
+      </CardFooter>
     </Card>
   )
 }

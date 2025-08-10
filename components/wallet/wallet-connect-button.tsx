@@ -9,7 +9,7 @@ import { WalletConnectModal } from "./wallet-connect-modal"
 import { toast } from "@/hooks/use-toast"
 
 export function WalletConnectButton() {
-  const { connectedAccount, isConnecting, connect, disconnect } = useWallet()
+  const { connectedAccount, isConnecting, connect, disconnect, error } = useWallet()
   const [showModal, setShowModal] = useState(false)
 
   const handleConnect = async () => {
@@ -17,12 +17,13 @@ export function WalletConnectButton() {
       await connect()
       toast({
         title: "Wallet Connected!",
-        description: "Successfully connected to your Hedera wallet.",
+        description: `Successfully connected account: ${connectedAccount}`,
       })
-    } catch (error) {
+    } catch (err) {
+      console.error("Connection error:", err)
       toast({
         title: "Connection Failed",
-        description: "Failed to connect wallet. Please try again.",
+        description: error || "Failed to connect wallet. Please ensure your WalletConnect Project ID is correct.",
         variant: "destructive",
       })
     }

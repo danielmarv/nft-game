@@ -19,7 +19,8 @@ export function WalletConnectModal({ open, onOpenChange, onConnect, isConnecting
 
   const handleConnect = async () => {
     await onConnect()
-    onOpenChange(false)
+    // The modal should close automatically once connection is successful via the onConnect callback
+    // onOpenChange(false); // This might be handled by the DAppConnector itself
   }
 
   return (
