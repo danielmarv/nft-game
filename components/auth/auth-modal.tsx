@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -9,9 +8,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Eye, EyeOff, Mail, Lock, User, Sparkles } from "lucide-react"
+import { Eye, EyeOff, Mail, Lock, User, Sparkles, LogIn, UserPlus } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { toast } from "@/hooks/use-toast"
+import { useUser } from "@stackframe/stack"
 
 interface AuthModalProps {
   open: boolean
@@ -20,6 +20,7 @@ interface AuthModalProps {
 
 export function AuthModal({ open, onOpenChange }: AuthModalProps) {
   const { signIn, signUp, loading } = useAuth()
+  const user = useUser()
   const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
     email: "",
@@ -28,7 +29,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
     confirmPassword: "",
   })
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleSignInForm = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
       await signIn(formData.email, formData.password)
@@ -46,7 +47,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
     }
   }
 
-  const handleSignUp = async (e: React.FormEvent) => {
+  const handleSignUpForm = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (formData.password !== formData.confirmPassword) {
@@ -78,6 +79,16 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
+  const handleSignIn = () => {
+    user?.signIn()
+    onOpenChange(false)
+  }
+
+  const handleSignUp = () => {
+    user?.signUp()
+    onOpenChange(false)
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -104,7 +115,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
                 <CardDescription>Enter your credentials to access your account</CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSignIn} className="space-y-4">
+                <form onSubmit={handleSignInForm} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="signin-email">Email</Label>
                     <div className="relative">
@@ -165,7 +176,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
                 <CardDescription>Join thousands of players in the ultimate Web3 gaming experience</CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSignUp} className="space-y-4">
+                <form onSubmit={handleSignUpForm} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="signup-name">Display Name</Label>
                     <div className="relative">
@@ -252,6 +263,24 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
             </Card>
           </TabsContent>
         </Tabs>
+      </DialogContent>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Welcome to NFT Gaming Platform</DialogTitle>
+          <DialogDescription>
+            Sign in to access your NFT collection, play games, and interact with your virtual pets.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-4 py-4">
+          <Button onClick={handleSignIn} className="w-full gap-2">
+            <LogIn className="h-4 w-4" />
+            Sign In
+          </Button>
+          <Button onClick={handleSignUp} variant="outline" className="w-full gap-2 bg-transparent">
+            <UserPlus className="h-4 w-4" />
+            Create Account
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   )

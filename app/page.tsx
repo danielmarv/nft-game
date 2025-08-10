@@ -1,290 +1,205 @@
 "use client"
 
-import { motion } from "framer-motion"
+import { useUser } from "@stackframe/stack"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Gamepad2, Trophy, Wallet, Sparkles } from "lucide-react"
-import Link from "next/link"
+import { AuthButton } from "@/components/auth/auth-button"
+import { AuthModal } from "@/components/auth/auth-modal"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { WalletConnectButton } from "@/components/wallet/wallet-connect-button"
-import { AuthButton } from "@/components/auth/auth-button"
-import { MagicalBackground } from "@/components/3d/magical-background"
-import { useAuth } from "@/hooks/use-auth"
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-}
-
-const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: {
-      duration: 0.5,
-    },
-  },
-}
+import { Gamepad2, Trophy, Sparkles, Users, Zap, Star } from "lucide-react"
+import Link from "next/link"
 
 export default function HomePage() {
-  const { user, isAuthenticated } = useAuth()
+  const user = useUser()
+  const [authModalOpen, setAuthModalOpen] = useState(false)
+
+  const features = [
+    {
+      icon: <Gamepad2 className="h-8 w-8" />,
+      title: "Interactive Games",
+      description: "Play engaging card games and pet interaction experiences",
+      color: "bg-blue-500/10 text-blue-500",
+    },
+    {
+      icon: <Trophy className="h-8 w-8" />,
+      title: "NFT Collection",
+      description: "Collect, trade, and showcase your unique digital assets",
+      color: "bg-purple-500/10 text-purple-500",
+    },
+    {
+      icon: <Sparkles className="h-8 w-8" />,
+      title: "3D Experience",
+      description: "Immersive 3D environments and magical backgrounds",
+      color: "bg-pink-500/10 text-pink-500",
+    },
+    {
+      icon: <Users className="h-8 w-8" />,
+      title: "Community",
+      description: "Connect with other players and share your achievements",
+      color: "bg-green-500/10 text-green-500",
+    },
+  ]
+
+  const games = [
+    {
+      title: "Card Battle Arena",
+      description: "Strategic card battles with your NFT collection",
+      route: "/game1",
+      difficulty: "Medium",
+      players: "1-4",
+    },
+    {
+      title: "Pet Adventure",
+      description: "Explore magical worlds with your virtual companions",
+      route: "/game2",
+      difficulty: "Easy",
+      players: "1",
+    },
+  ]
 
   return (
-    <div className="min-h-screen relative">
-      <MagicalBackground />
-
-      <div className="relative z-10 bg-gradient-to-br from-background/80 via-background/90 to-primary/5 backdrop-blur-sm">
-        {/* Header */}
-        <header className="border-b border-border/40 backdrop-blur-sm bg-background/80">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-            <motion.div
-              className="flex items-center space-x-2"
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-            >
-              <div className="relative">
-                <Sparkles className="h-8 w-8 text-primary" />
-                <div className="absolute inset-0 h-8 w-8 bg-primary/20 rounded-full animate-ping"></div>
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  NFT Gaming
-                </h1>
-                <p className="text-xs text-muted-foreground">Web3 Adventure Platform</p>
-              </div>
-            </motion.div>
-
-            <div className="flex items-center space-x-4">
-              <ThemeToggle />
-              <WalletConnectButton />
-              <AuthButton />
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      {/* Header */}
+      <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Zap className="h-8 w-8 text-primary" />
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+              NFT Gaming Platform
+            </h1>
           </div>
-        </header>
+          <div className="flex items-center gap-4">
+            <WalletConnectButton />
+            <ThemeToggle />
+            {user ? (
+              <AuthButton />
+            ) : (
+              <Button onClick={() => setAuthModalOpen(true)} variant="default">
+                Get Started
+              </Button>
+            )}
+          </div>
+        </div>
+      </header>
 
-        {/* Hero Section */}
-        <motion.section
-          className="container mx-auto px-4 py-20 text-center"
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <motion.div variants={itemVariants}>
-            <Badge
-              variant="secondary"
-              className="mb-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/20"
-            >
-              <Sparkles className="h-3 w-3 mr-1" />
-              Web3 Gaming Platform
-            </Badge>
-          </motion.div>
-
-          <motion.h2
-            className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-primary via-purple-600 to-pink-600 bg-clip-text text-transparent"
-            variants={itemVariants}
-          >
-            Play, Collect, Earn
-          </motion.h2>
-
-          <motion.p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto" variants={itemVariants}>
-            Experience the future of gaming with NFT-powered adventures. Collect unique pets, trade cards, and earn
-            achievements on the Hedera network.
-          </motion.p>
-
-          {isAuthenticated && (
-            <motion.div
-              className="mb-8 p-6 bg-gradient-to-r from-card/50 to-primary/5 rounded-xl border border-primary/20 max-w-md mx-auto backdrop-blur-sm"
-              variants={itemVariants}
-            >
-              <div className="flex items-center justify-center space-x-3 mb-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                <p className="text-sm text-muted-foreground">Welcome back,</p>
-              </div>
-              <p className="font-semibold text-primary text-lg">{user?.displayName || "Player"}</p>
-            </motion.div>
-          )}
-
-          <motion.div className="flex flex-col sm:flex-row gap-4 justify-center" variants={itemVariants}>
-            {isAuthenticated ? (
+      {/* Hero Section */}
+      <section className="container mx-auto px-4 py-16 text-center">
+        <div className="max-w-4xl mx-auto">
+          <Badge variant="secondary" className="mb-4">
+            <Star className="h-4 w-4 mr-1" />
+            Web3 Gaming Platform
+          </Badge>
+          <h2 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-foreground via-primary to-purple-600 bg-clip-text text-transparent">
+            Enter the Future of Gaming
+          </h2>
+          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+            Collect NFTs, battle with cards, raise virtual pets, and explore immersive 3D worlds in our revolutionary
+            gaming ecosystem.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            {user ? (
               <>
-                <Button
-                  asChild
-                  size="lg"
-                  className="glow-animation bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 border-0"
-                >
-                  <Link href="/game1">
-                    <Gamepad2 className="mr-2 h-5 w-5" />
-                    Pet Adventure
-                  </Link>
+                <Button size="lg" asChild>
+                  <Link href="/gallery">View Collection</Link>
                 </Button>
-                <Button
-                  asChild
-                  variant="outline"
-                  size="lg"
-                  className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/30 hover:bg-gradient-to-r hover:from-purple-500/20 hover:to-pink-500/20"
-                >
-                  <Link href="/game2">
-                    <Trophy className="mr-2 h-5 w-5" />
-                    Card Battle
-                  </Link>
+                <Button size="lg" variant="outline" asChild>
+                  <Link href="/game1">Start Playing</Link>
                 </Button>
               </>
             ) : (
-              <Button size="lg" disabled className="bg-gradient-to-r from-gray-500 to-gray-600">
-                <Wallet className="mr-2 h-5 w-5" />
-                Connect to Start Playing
-              </Button>
+              <>
+                <Button size="lg" onClick={() => setAuthModalOpen(true)}>
+                  Join Now
+                </Button>
+                <Button size="lg" variant="outline" asChild>
+                  <Link href="/gallery">Explore Gallery</Link>
+                </Button>
+              </>
             )}
-          </motion.div>
-        </motion.section>
-
-        {/* Features Grid */}
-        <motion.section
-          className="container mx-auto px-4 py-20"
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-        >
-          <motion.h3 className="text-3xl font-bold text-center mb-12" variants={itemVariants}>
-            Game Features
-          </motion.h3>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <motion.div variants={itemVariants}>
-              <Card className="h-full hover:shadow-xl transition-all duration-300 border-primary/20 bg-gradient-to-br from-card to-green-500/5 group">
-                <CardHeader>
-                  <div className="relative mb-4">
-                    <Gamepad2 className="h-12 w-12 text-green-500 group-hover:scale-110 transition-transform duration-300" />
-                    <div className="absolute inset-0 h-12 w-12 bg-green-500/20 rounded-full animate-ping group-hover:animate-pulse"></div>
-                  </div>
-                  <CardTitle>Pet Interaction</CardTitle>
-                  <CardDescription>Adopt and care for unique NFT pets. Feed, hug, and watch them grow!</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ul className="text-sm text-muted-foreground space-y-2">
-                    <li className="flex items-center">
-                      <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>3D interactive pets
-                    </li>
-                    <li className="flex items-center">
-                      <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>Achievement rewards
-                    </li>
-                    <li className="flex items-center">
-                      <span className="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>Multiple pet collection
-                    </li>
-                  </ul>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            <motion.div variants={itemVariants}>
-              <Card className="h-full hover:shadow-xl transition-all duration-300 border-primary/20 bg-gradient-to-br from-card to-purple-500/5 group">
-                <CardHeader>
-                  <div className="relative mb-4">
-                    <Trophy className="h-12 w-12 text-purple-500 group-hover:scale-110 transition-transform duration-300" />
-                    <div className="absolute inset-0 h-12 w-12 bg-purple-500/20 rounded-full animate-ping group-hover:animate-pulse"></div>
-                  </div>
-                  <CardTitle>Trading Cards</CardTitle>
-                  <CardDescription>Collect rare cards, complete sets, and battle other players.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ul className="text-sm text-muted-foreground space-y-2">
-                    <li className="flex items-center">
-                      <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>Daily card rewards
-                    </li>
-                    <li className="flex items-center">
-                      <span className="w-2 h-2 bg-pink-500 rounded-full mr-2"></span>3D card animations
-                    </li>
-                    <li className="flex items-center">
-                      <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>Rarity-based gameplay
-                    </li>
-                  </ul>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            <motion.div variants={itemVariants}>
-              <Card className="h-full hover:shadow-xl transition-all duration-300 border-primary/20 bg-gradient-to-br from-card to-yellow-500/5 group">
-                <CardHeader>
-                  <div className="relative mb-4">
-                    <Sparkles className="h-12 w-12 text-yellow-500 group-hover:scale-110 transition-transform duration-300" />
-                    <div className="absolute inset-0 h-12 w-12 bg-yellow-500/20 rounded-full animate-ping group-hover:animate-pulse"></div>
-                  </div>
-                  <CardTitle>NFT Achievements</CardTitle>
-                  <CardDescription>
-                    Earn unique achievement NFTs by completing challenges and milestones.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ul className="text-sm text-muted-foreground space-y-2">
-                    <li className="flex items-center">
-                      <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>Milestone rewards
-                    </li>
-                    <li className="flex items-center">
-                      <span className="w-2 h-2 bg-cyan-500 rounded-full mr-2"></span>Public gallery
-                    </li>
-                    <li className="flex items-center">
-                      <span className="w-2 h-2 bg-indigo-500 rounded-full mr-2"></span>Hedera blockchain
-                    </li>
-                  </ul>
-                </CardContent>
-              </Card>
-            </motion.div>
           </div>
-        </motion.section>
+        </div>
+      </section>
 
-        {/* CTA Section */}
-        <motion.section
-          className="container mx-auto px-4 py-20 text-center"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          <Card className="max-w-2xl mx-auto border-primary/20 bg-gradient-to-r from-primary/5 via-purple-600/5 to-pink-600/5 backdrop-blur-sm">
+      {/* Features Section */}
+      <section className="container mx-auto px-4 py-16">
+        <div className="text-center mb-12">
+          <h3 className="text-3xl font-bold mb-4">Platform Features</h3>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            Discover what makes our platform unique and engaging for players of all levels.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {features.map((feature, index) => (
+            <Card key={index} className="text-center hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div
+                  className={`w-16 h-16 rounded-full ${feature.color} flex items-center justify-center mx-auto mb-4`}
+                >
+                  {feature.icon}
+                </div>
+                <CardTitle className="text-xl">{feature.title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>{feature.description}</CardDescription>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      {/* Games Section */}
+      <section className="container mx-auto px-4 py-16">
+        <div className="text-center mb-12">
+          <h3 className="text-3xl font-bold mb-4">Available Games</h3>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            Choose your adventure and start playing our exciting games.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          {games.map((game, index) => (
+            <Card key={index} className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Gamepad2 className="h-5 w-5" />
+                  {game.title}
+                </CardTitle>
+                <CardDescription>{game.description}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-between items-center mb-4">
+                  <Badge variant="outline">Difficulty: {game.difficulty}</Badge>
+                  <Badge variant="outline">Players: {game.players}</Badge>
+                </div>
+                <Button asChild className="w-full">
+                  <Link href={game.route}>Play Now</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      {!user && (
+        <section className="container mx-auto px-4 py-16">
+          <Card className="max-w-2xl mx-auto text-center bg-gradient-to-r from-primary/10 to-purple-600/10 border-primary/20">
             <CardHeader>
-              <CardTitle className="text-3xl flex items-center justify-center">
-                <Sparkles className="h-6 w-6 mr-2 text-primary" />
-                Ready to Start Your Adventure?
-              </CardTitle>
-              <CardDescription className="text-lg">
-                Join thousands of players in the ultimate Web3 gaming experience.
-              </CardDescription>
+              <CardTitle className="text-2xl">Ready to Start Your Journey?</CardTitle>
+              <CardDescription>Join thousands of players in the ultimate Web3 gaming experience.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button
-                  asChild
-                  size="lg"
-                  className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 border-0"
-                >
-                  <Link href="/gallery">
-                    <Trophy className="mr-2 h-5 w-5" />
-                    View Gallery
-                  </Link>
-                </Button>
-                <Button
-                  asChild
-                  variant="outline"
-                  size="lg"
-                  className="bg-gradient-to-r from-green-500/10 to-blue-500/10 border-green-500/30"
-                >
-                  <Link href="/profile">
-                    <Wallet className="mr-2 h-5 w-5" />
-                    My Profile
-                  </Link>
-                </Button>
-              </div>
+              <Button size="lg" onClick={() => setAuthModalOpen(true)}>
+                Create Your Account
+              </Button>
             </CardContent>
           </Card>
-        </motion.section>
-      </div>
+        </section>
+      )}
+
+      <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} />
     </div>
   )
 }
