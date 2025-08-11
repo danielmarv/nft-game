@@ -1,220 +1,158 @@
 "use client"
 
 import { useUser } from "@stackframe/stack"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { AuthButton } from "@/components/auth/auth-button"
+import { AuthModal } from "@/components/auth/auth-modal"
 import { WalletConnectButton } from "@/components/wallet/wallet-connect-button"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { MagicalBackground } from "@/components/3d/magical-background"
-import { Play, Trophy, Users, Sparkles, Gamepad2, Coins } from "lucide-react"
+import { Gamepad2, Trophy, Coins, Users } from "lucide-react"
 import Link from "next/link"
+import { DailyReward } from "@/components/game/daily-reward"
+import { PetSelector } from "@/components/game/pet-selector"
+import { CardGallery } from "@/components/game/card-gallery"
+import { PetViewer } from "@/components/3d/pet-viewer"
+import { useNFTs } from "@/hooks/use-nfts"
+import { usePetInteraction } from "@/hooks/use-pet-interaction"
 
 export default function HomePage() {
   const user = useUser()
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const { pets, isLoading: isLoadingNFTs } = useNFTs("pets")
+  const [selectedPet, setSelectedPet] = useState<(typeof pets)[0] | null>(null)
+  const { interactWithPet, isInteracting } = usePetInteraction()
 
-  const gameStats = [
-    { label: "Active Players", value: "12,847", icon: Users },
-    { label: "Games Played", value: "1.2M", icon: Gamepad2 },
-    { label: "Rewards Distributed", value: "₿ 45,231", icon: Coins },
-    { label: "Tournaments", value: "156", icon: Trophy },
-  ]
+  // Simulate first login pet assignment
+  useEffect(() => {
+    if (user && user.isSignedIn && !selectedPet && pets && pets.length > 0) {
+      // Assign the first pet as default if none selected
+      setSelectedPet(pets[0])
+    }
+  }, [user, pets, selectedPet])
 
-  const featuredGames = [
+  const handleRewardClaimed = (reward: { type: string; amount: number }) => {
+    console.log(`Reward claimed: ${reward.amount} ${reward.type}`)
+    // Here you would update user's balance in your backend/state
+  }
+
+  const gameFeatures = [
     {
-      id: "card-battle",
-      title: "Card Battle Arena",
-      description: "Strategic card battles with NFT rewards",
-      image: "/placeholder.svg?height=200&width=300",
-      players: "2.1k",
-      status: "Live",
-      href: "/game1",
+      icon: <Gamepad2 className="h-8 w-8" />,
+      title: "Interactive Games",
+      description: "Play engaging card games and pet collection adventures",
     },
     {
-      id: "pet-adventure",
-      title: "Pet Adventure Quest",
-      description: "Collect and battle with magical creatures",
-      image: "/placeholder.svg?height=200&width=300",
-      players: "1.8k",
-      status: "Live",
-      href: "/game2",
+      icon: <Trophy className="h-8 w-8" />,
+      title: "NFT Rewards",
+      description: "Earn unique NFT cards and pets as you progress",
     },
     {
-      id: "nft-gallery",
-      title: "NFT Gallery",
-      description: "Showcase and trade your digital collectibles",
-      image: "/placeholder.svg?height=200&width=300",
-      players: "956",
-      status: "Beta",
-      href: "/gallery",
+      icon: <Coins className="h-8 w-8" />,
+      title: "Daily Rewards",
+      description: "Collect daily bonuses and special items",
+    },
+    {
+      icon: <Users className="h-8 w-8" />,
+      title: "Community",
+      description: "Trade and compete with other players",
     },
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 relative overflow-hidden">
-      <MagicalBackground />
-
-      {/* Header */}
-      <header className="relative z-10 border-b border-white/10 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Sparkles className="h-8 w-8 text-purple-400" />
-            <h1 className="text-2xl font-bold text-white">Hedera Gaming</h1>
-          </div>
-
-          <div className="flex items-center space-x-4">
-            <WalletConnectButton />
-            <AuthButton />
-            <ThemeToggle />
-          </div>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white">
+      <header className="container mx-auto px-4 py-6 flex justify-between items-center">
+        <h1 className="text-3xl font-bold text-purple-400">NFT Game</h1>
+        <nav className="flex items-center space-x-4">
+          <Link href="/" passHref>
+            <Button variant="ghost" className="text-white hover:text-purple-300">
+              Home
+            </Button>
+          </Link>
+          <Link href="/gallery" passHref>
+            <Button variant="ghost" className="text-white hover:text-purple-300">
+              Gallery
+            </Button>
+          </Link>
+          <Link href="/game1" passHref>
+            <Button variant="ghost" className="text-white hover:text-purple-300">
+              Game 1
+            </Button>
+          </Link>
+          <Link href="/game2" passHref>
+            <Button variant="ghost" className="text-white hover:text-purple-300">
+              Game 2
+            </Button>
+          </Link>
+          <WalletConnectButton />
+          <AuthButton />
+          <ThemeToggle />
+        </nav>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative z-10 container mx-auto px-4 py-16 text-center">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-5xl md:text-7xl font-bold text-white mb-6 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-            Play. Earn. Own.
+      <main className="container mx-auto px-4 py-8 space-y-12">
+        <section className="text-center space-y-4">
+          <h2 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600">
+            Welcome to the NFT Adventure!
           </h2>
-          <p className="text-xl md:text-2xl text-gray-300 mb-8 leading-relaxed">
-            Experience the future of gaming on Hedera. Battle with NFT cards, collect rare pets, and earn real rewards
-            in our decentralized gaming ecosystem.
+          <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+            Collect unique digital assets, battle with powerful cards, and nurture your adorable 3D pets. Your journey
+            into the blockchain gaming world starts here.
           </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            {user ? (
+          <div className="flex justify-center gap-4 pt-4">
+            <Link href="/gallery" passHref>
+              <Button size="lg" className="bg-purple-600 hover:bg-purple-700 text-white">
+                Explore NFTs
+              </Button>
+            </Link>
+            <Link href="/game1" passHref>
               <Button
-                asChild
                 size="lg"
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                variant="outline"
+                className="border-purple-600 text-purple-400 hover:bg-purple-900 bg-transparent"
               >
-                <Link href="/game1">
-                  <Play className="mr-2 h-5 w-5" />
-                  Start Playing
-                </Link>
+                Start Playing
               </Button>
-            ) : (
-              <Button
-                asChild
-                size="lg"
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-              >
-                <Link href="/handler/signup">
-                  <Play className="mr-2 h-5 w-5" />
-                  Get Started
-                </Link>
-              </Button>
-            )}
-
-            <Button
-              asChild
-              variant="outline"
-              size="lg"
-              className="border-white/20 text-white hover:bg-white/10 bg-transparent"
-            >
-              <Link href="/gallery">
-                <Trophy className="mr-2 h-5 w-5" />
-                View Gallery
-              </Link>
-            </Button>
+            </Link>
           </div>
+        </section>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
-            {gameStats.map((stat, index) => (
-              <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-sm">
-                <CardContent className="p-6 text-center">
-                  <stat.icon className="h-8 w-8 text-purple-400 mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-white">{stat.value}</div>
-                  <div className="text-sm text-gray-300">{stat.label}</div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
+        <section className="space-y-8">
+          <h3 className="text-4xl font-bold text-center text-purple-400">Your Digital Companions</h3>
+          {user?.isSignedIn && pets && pets.length > 0 ? (
+            <PetSelector pets={pets} selectedPet={selectedPet || undefined} onSelectPet={setSelectedPet} />
+          ) : (
+            <p className="text-muted-foreground">Sign in to see your pets!</p>
+          )}
+          {selectedPet && (
+            <div className="mt-4 h-[400px]">
+              <PetViewer
+                key={selectedPet.id} // Key changes to remount and animate new pet
+                petId={selectedPet.id}
+                onHug={() => interactWithPet(selectedPet.id, "hug")}
+                onFeed={() => interactWithPet(selectedPet.id, "feed")}
+                isInteracting={isInteracting}
+              />
+            </div>
+          )}
+        </section>
 
-      {/* Featured Games */}
-      <section className="relative z-10 container mx-auto px-4 py-16">
-        <div className="text-center mb-12">
-          <h3 className="text-3xl md:text-4xl font-bold text-white mb-4">Featured Games</h3>
-          <p className="text-gray-300 text-lg">Discover our most popular gaming experiences</p>
-        </div>
+        <section className="space-y-8">
+          <h3 className="text-4xl font-bold text-center text-purple-400">Daily Rewards</h3>
+          <DailyReward onRewardClaimed={handleRewardClaimed} />
+        </section>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {featuredGames.map((game) => (
-            <Card
-              key={game.id}
-              className="bg-white/10 border-white/20 backdrop-blur-sm hover:bg-white/15 transition-all duration-300 group"
-            >
-              <div className="relative overflow-hidden rounded-t-lg">
-                <img
-                  src={game.image || "/placeholder.svg"}
-                  alt={game.title}
-                  className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute top-4 right-4 flex gap-2">
-                  <Badge className={game.status === "Live" ? "bg-green-500" : "bg-yellow-500"}>{game.status}</Badge>
-                </div>
-                <div className="absolute bottom-4 left-4">
-                  <Badge variant="secondary" className="bg-black/50 text-white">
-                    <Users className="h-3 w-3 mr-1" />
-                    {game.players}
-                  </Badge>
-                </div>
-              </div>
+        <section className="space-y-8">
+          <h3 className="text-4xl font-bold text-center text-purple-400">Featured Cards</h3>
+          <CardGallery />
+        </section>
+      </main>
 
-              <CardHeader>
-                <CardTitle className="text-white">{game.title}</CardTitle>
-                <CardDescription className="text-gray-300">{game.description}</CardDescription>
-              </CardHeader>
+      <footer className="container mx-auto px-4 py-6 text-center text-gray-500">
+        <p>&copy; {new Date().getFullYear()} NFT Game. All rights reserved.</p>
+      </footer>
 
-              <CardContent>
-                <Button asChild className="w-full">
-                  <Link href={game.href}>
-                    <Play className="mr-2 h-4 w-4" />
-                    Play Now
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="relative z-10 container mx-auto px-4 py-16">
-        <Card className="bg-gradient-to-r from-purple-600/20 to-pink-600/20 border-purple-500/30 backdrop-blur-sm">
-          <CardContent className="p-12 text-center">
-            <h3 className="text-3xl font-bold text-white mb-4">Ready to Start Your Adventure?</h3>
-            <p className="text-gray-300 text-lg mb-8 max-w-2xl mx-auto">
-              Join thousands of players in the ultimate Web3 gaming experience. Connect your wallet, collect NFTs, and
-              start earning today.
-            </p>
-
-            {!user ? (
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button asChild size="lg" className="bg-gradient-to-r from-purple-600 to-pink-600">
-                  <Link href="/handler/signup">Create Account</Link>
-                </Button>
-                <Button
-                  asChild
-                  variant="outline"
-                  size="lg"
-                  className="border-white/20 text-white hover:bg-white/10 bg-transparent"
-                >
-                  <Link href="/handler/signin">Sign In</Link>
-                </Button>
-              </div>
-            ) : (
-              <Button asChild size="lg" className="bg-gradient-to-r from-purple-600 to-pink-600">
-                <Link href="/profile">View Profile</Link>
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      </section>
+      <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
     </div>
   )
 }

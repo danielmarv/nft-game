@@ -1,25 +1,44 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
+import { cn, truncateAddress } from "@/lib/utils"
 
 interface NftCardProps {
   name: string
   description: string
   imageUrl: string
-  price: string
-  owner: string
+  price?: string
+  owner?: string
+  rarity?: string
   onBuy?: () => void
 }
 
-export function NftCard({ name, description, imageUrl, price, owner, onBuy }: NftCardProps) {
+export function NftCard({ name, description, imageUrl, price, owner, rarity, onBuy }: NftCardProps) {
+  const getRarityColor = (rarity?: string) => {
+    switch (rarity?.toLowerCase()) {
+      case "common":
+        return "text-gray-500"
+      case "uncommon":
+        return "text-green-500"
+      case "rare":
+        return "text-blue-500"
+      case "epic":
+        return "text-purple-500"
+      case "legendary":
+        return "text-yellow-500"
+      default:
+        return "text-gray-500"
+    }
+  }
+
   return (
-    <Card className="w-[300px] overflow-hidden">
+    <Card className="overflow-hidden">
       <CardHeader className="p-0">
         <div className="relative w-full h-48">
           <Image
-            src={imageUrl || "/placeholder.svg"}
+            src={imageUrl || "/placeholder.svg?height=300&width=200"}
             alt={name}
             layout="fill"
             objectFit="cover"
@@ -29,27 +48,18 @@ export function NftCard({ name, description, imageUrl, price, owner, onBuy }: Nf
           />
         </div>
       </CardHeader>
-      <CardContent className="p-4 space-y-2">
-        <CardTitle className="text-xl font-bold">{name}</CardTitle>
-        <CardDescription className="text-sm text-muted-foreground line-clamp-2">{description}</CardDescription>
-        <div className="flex justify-between items-center text-sm">
-          <span className="font-medium">Price:</span>
-          <span className="text-primary font-semibold">{price} HBAR</span>
-        </div>
-        <div className="flex justify-between items-center text-sm">
-          <span className="font-medium">Owner:</span>
-          <span className="text-muted-foreground">
-            {owner.slice(0, 6)}...{owner.slice(-4)}
-          </span>
-        </div>
-      </CardContent>
-      <CardFooter className="p-4 pt-0">
+      <CardContent className="p-4">
+        <CardTitle className="text-lg font-bold mb-1">{name}</CardTitle>
+        <CardDescription className="text-sm mb-2 line-clamp-2">{description}</CardDescription>
+        {rarity && <p className={cn("text-sm font-semibold mb-1", getRarityColor(rarity))}>Rarity: {rarity}</p>}
+        {price && <p className="text-md font-semibold mb-1">Price: {price} ETH</p>}
+        {owner && <p className="text-sm text-muted-foreground mb-3">Owner: {truncateAddress(owner)}</p>}
         {onBuy && (
           <Button onClick={onBuy} className="w-full">
             Buy Now
           </Button>
         )}
-      </CardFooter>
+      </CardContent>
     </Card>
   )
 }

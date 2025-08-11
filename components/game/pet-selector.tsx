@@ -1,129 +1,146 @@
 "use client"
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { Heart, Zap, Shield, Star } from "lucide-react"
+import { useState, useEffect } from "react"
+import { useUser } from "@stackframe/stack"
+import { useNFTs } from "@/hooks/use-nfts"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { PetViewer } from "@/components/3d/pet-viewer"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface Pet {
   id: string
   name: string
-  type: string
-  level: number
-  health: number
-  maxHealth: number
-  energy: number
-  maxEnergy: number
-  defense: number
-  rarity: "common" | "rare" | "epic" | "legendary"
+  description: string
   image: string
-  abilities: string[]
+  rarity?: string
+  type?: string
+  attributes?: Array<{
+    trait_type: string
+    value: string
+  }>
 }
 
-interface PetSelectorProps {
-  pets: Pet[]
-  selectedPet?: Pet
-  onSelectPet: (pet: Pet) => void
-}
+export function PetSelector() {
+  const { isSignedIn } = useUser()
+  const { pets, isLoading, error } = useNFTs("pets")
+  const [selectedPetId, setSelectedPetId] = useState<string | null>(null)
+  const [currentPet, setCurrentPet] = useState<Pet | null>(null)
 
-export function PetSelector({ pets, selectedPet, onSelectPet }: PetSelectorProps) {
-  const [hoveredPet, setHoveredPet] = useState<string | null>(null)
+  useEffect(() => {
+    if (isSignedIn && pets && pets.length > 0 && !selectedPetId) {
+      // On first login, if no pet is selected, default to the first pet
+      setSelectedPetId(pets[0].id)
+      setCurrentPet(pets[0])
+    } else if (selectedPetId && pets) {
+      // Update currentPet if selectedPetId changes or pets data reloads
+      const foundPet = pets.find((pet) => pet.id === selectedPetId)
+      if (foundPet) {
+        setCurrentPet(foundPet)
+      } else if (pets.length > 0) {
+        // If previously selected pet is no longer available, default to first
+        setSelectedPetId(pets[0].id)
+        setCurrentPet(pets[0])
+      } else {
+        // No pets available
+        setSelectedPetId(null)
+        setCurrentPet(null)
+      }
+    }
+  }, [isSignedIn, pets, selectedPetId])
 
-  const rarityColors = {
-    common: "bg-gray-500",
-    rare: "bg-blue-500",
-    epic: "bg-purple-500",
-    legendary: "bg-yellow-500",
+  const handlePetChange = (petId: string) => {
+    setSelectedPetId(petId)
+    const newPet = pets?.find((pet) => pet.id === petId)
+    if (newPet) {
+      setCurrentPet(newPet)
+    }
+  }
+
+  if (!isSignedIn) {
+    return (
+      <Card className="w-full max-w-md mx-auto text-center p-6">
+        <CardHeader>
+          <CardTitle>Sign In to See Your Pets</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">Please sign in to view and interact with your pets.</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <div className="w-full max-w-4xl mx-auto p-4 space-y-4">
+        <Skeleton className="h-10 w-full max-w-xs" />
+        <Skeleton className="w-full h-[500px] rounded-lg" />
+        <div className="grid grid-cols-2 gap-4">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card className="w-full max-w-md mx-auto text-center p-6 border-red-500">
+        <CardHeader>
+          <CardTitle className="text-red-600">Error Loading Pets</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">{error.message || "Failed to load pet data."}</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (!pets || pets.length === 0) {
+    return (
+      <Card className="w-full max-w-md mx-auto text-center p-6">
+        <CardHeader>
+          <CardTitle>No Pets Found</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">
+            It looks like you don't have any pets yet. Log in for the first time to get your first pet!
+          </p>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
-    <div className="space-y-4">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold mb-2">Choose Your Battle Pet</h2>
-        <p className="text-muted-foreground">Select a pet to join you in battle</p>
-      </div>
+    <div className="w-full max-w-4xl mx-auto p-4 space-y-6">
+      {pets.length > 1 && (
+        <div className="flex justify-center">
+          <Select value={selectedPetId || ""} onValueChange={handlePetChange}>
+            <SelectTrigger className="w-[280px]">
+              <SelectValue placeholder="Select a pet" />
+            </SelectTrigger>
+            <SelectContent>
+              {pets.map((pet) => (
+                <SelectItem key={pet.id} value={pet.id}>
+                  {pet.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {pets.map((pet) => (
-          <Card
-            key={pet.id}
-            className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${
-              selectedPet?.id === pet.id ? "ring-2 ring-primary" : ""
-            } ${hoveredPet === pet.id ? "scale-105" : ""}`}
-            onMouseEnter={() => setHoveredPet(pet.id)}
-            onMouseLeave={() => setHoveredPet(null)}
-            onClick={() => onSelectPet(pet)}
-          >
-            <CardHeader className="pb-2">
-              <div className="relative">
-                <img
-                  src={pet.image || `/placeholder.svg?height=120&width=120&query=${pet.name}`}
-                  alt={pet.name}
-                  className="w-full h-32 object-cover rounded-lg"
-                />
-                <Badge className={`absolute top-2 right-2 ${rarityColors[pet.rarity]} text-white`}>{pet.rarity}</Badge>
-                <div className="absolute top-2 left-2 flex items-center gap-1 bg-black/60 rounded px-2 py-1">
-                  <Star className="h-3 w-3 text-yellow-400" />
-                  <span className="text-white text-sm">{pet.level}</span>
-                </div>
-              </div>
-              <CardTitle className="text-lg">{pet.name}</CardTitle>
-              <CardDescription>{pet.type}</CardDescription>
-            </CardHeader>
-
-            <CardContent className="space-y-3">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-1">
-                    <Heart className="h-4 w-4 text-red-500" />
-                    <span>Health</span>
-                  </div>
-                  <span>
-                    {pet.health}/{pet.maxHealth}
-                  </span>
-                </div>
-                <Progress value={(pet.health / pet.maxHealth) * 100} className="h-2" />
-
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-1">
-                    <Zap className="h-4 w-4 text-yellow-500" />
-                    <span>Energy</span>
-                  </div>
-                  <span>
-                    {pet.energy}/{pet.maxEnergy}
-                  </span>
-                </div>
-                <Progress value={(pet.energy / pet.maxEnergy) * 100} className="h-2" />
-
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-1">
-                    <Shield className="h-4 w-4 text-blue-500" />
-                    <span>Defense</span>
-                  </div>
-                  <span>{pet.defense}</span>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium">Abilities</h4>
-                <div className="flex flex-wrap gap-1">
-                  {pet.abilities.map((ability, index) => (
-                    <Badge key={index} variant="outline" className="text-xs">
-                      {ability}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              <Button className="w-full" variant={selectedPet?.id === pet.id ? "default" : "outline"}>
-                {selectedPet?.id === pet.id ? "Selected" : "Select Pet"}
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {currentPet ? (
+        <div className="relative w-full h-[500px] bg-gradient-to-br from-purple-900 to-indigo-900 rounded-lg shadow-xl overflow-hidden">
+          <PetViewer pet={currentPet} />
+        </div>
+      ) : (
+        <Card className="w-full h-[500px] flex items-center justify-center">
+          <CardContent className="text-center text-muted-foreground">
+            <p>Select a pet to view it in 3D.</p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

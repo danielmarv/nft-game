@@ -1,100 +1,76 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
+import { toast } from "@/hooks/use-toast"
 
-interface NFT {
+interface PublicNFT {
   id: string
   name: string
   description: string
-  image: string
-  rarity?: string
-  type?: string
-  attributes?: Array<{
-    trait_type: string
-    value: string
-  }>
+  imageUrl: string
+  price: string
+  owner: string
 }
 
-// Mock API function for fetching public NFTs by account ID
-const fetchPublicNFTs = async (
-  accountId: string,
-): Promise<{
-  achievements: NFT[]
-  pets: NFT[]
-  cards: NFT[]
-}> => {
+// Mock API function for fetching public NFTs
+const fetchPublicNFTs = async (): Promise<PublicNFT[]> => {
   // Simulate API delay
   await new Promise((resolve) => setTimeout(resolve, 1500))
 
-  // Mock validation
-  if (!accountId.match(/^0\.0\.\d+$/)) {
-    throw new Error("Invalid Hedera account ID format")
-  }
-
-  // Mock data - in real app, this would fetch from Hedera Mirror Node API
-  return {
-    achievements: [
-      {
-        id: "pub_achievement_1",
-        name: "Pet Master",
-        description: "Achieved mastery in pet care",
-        image: "/placeholder.svg?height=300&width=300",
-        rarity: "legendary",
-        type: "achievement",
-      },
-      {
-        id: "pub_achievement_2",
-        name: "Card Collector",
-        description: "Collected 50 unique cards",
-        image: "/placeholder.svg?height=300&width=300",
-        rarity: "epic",
-        type: "achievement",
-      },
-    ],
-    pets: [
-      {
-        id: "pub_pet_1",
-        name: "Golden Phoenix",
-        description: "A rare golden phoenix companion",
-        image: "/placeholder.svg?height=300&width=300",
-        rarity: "legendary",
-        type: "pet",
-      },
-    ],
-    cards: [
-      {
-        id: "pub_card_1",
-        name: "Lightning Strike",
-        description: "A powerful lightning attack card",
-        image: "/placeholder.svg?height=300&width=300",
-        rarity: "epic",
-        type: "air",
-      },
-      {
-        id: "pub_card_2",
-        name: "Earth Shield",
-        description: "A defensive earth-based card",
-        image: "/placeholder.svg?height=300&width=300",
-        rarity: "rare",
-        type: "earth",
-      },
-    ],
-  }
+  return [
+    {
+      id: "public_nft_1",
+      name: "Cosmic Shard",
+      description: "A fragment of a fallen star, radiating ancient energy.",
+      imageUrl: "/placeholder.svg?height=400&width=300&text=Cosmic Shard",
+      price: "0.5",
+      owner: "0xabc...123",
+    },
+    {
+      id: "public_nft_2",
+      name: "Enchanted Scroll",
+      description: "Contains forgotten spells and powerful incantations.",
+      imageUrl: "/placeholder.svg?height=400&width=300&text=Enchanted Scroll",
+      price: "1.2",
+      owner: "0xdef...456",
+    },
+    {
+      id: "public_nft_3",
+      name: "Guardian's Amulet",
+      description: "Protects its wearer from dark magic.",
+      imageUrl: "/placeholder.svg?height=400&width=300&text=Guardian Amulet",
+      price: "0.8",
+      owner: "0xghi...789",
+    },
+    {
+      id: "public_nft_4",
+      name: "Whispering Blade",
+      description: "A legendary sword that whispers secrets to its wielder.",
+      imageUrl: "/placeholder.svg?height=400&width=300&text=Whispering Blade",
+      price: "2.0",
+      owner: "0xjkl...012",
+    },
+  ]
 }
 
-export function usePublicNFTs(accountId: string | null) {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["public-nfts", accountId],
-    queryFn: () => fetchPublicNFTs(accountId!),
-    enabled: !!accountId,
-    retry: 1,
+export function usePublicNfts() {
+  const { data, isLoading, error, refetch } = useQuery<PublicNFT[], Error>({
+    queryKey: ["publicNfts"],
+    queryFn: fetchPublicNFTs,
+    staleTime: 1000 * 60 * 10, // Data considered fresh for 10 minutes
+    onError: (err) => {
+      toast({
+        title: "Error fetching public NFTs",
+        description: err.message || "Failed to load public NFT data.",
+        variant: "destructive",
+      })
+    },
   })
 
   return {
-    achievements: data?.achievements,
-    pets: data?.pets,
-    cards: data?.cards,
-    loading: isLoading,
-    error: error?.message,
+    publicNfts: data,
+    isLoading,
+    error,
+    refetch,
   }
 }

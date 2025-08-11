@@ -1,84 +1,74 @@
 "use client"
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { useAuth } from "./use-auth"
+import { useState, useCallback } from "react"
+import { toast } from "@/hooks/use-toast"
 
 interface PetStats {
-  hugCount: number
-  feedCount: number
-  lastInteraction: string
+  happiness: number
+  hunger: number
+  energy: number
 }
 
-interface InteractionResult {
-  hugCount: number
-  feedCount: number
-  achievementEarned?: boolean
+const initialStats: PetStats = {
+  happiness: 70,
+  hunger: 50,
+  energy: 80,
 }
 
-// Mock API functions
-const fetchPetStats = async (userId: string, petId: string): Promise<PetStats> => {
-  await new Promise((resolve) => setTimeout(resolve, 500))
+export function usePetInteraction(petId: string) {
+  const [stats, setStats] = useState<PetStats>(initialStats)
+  const [lastInteraction, setLastInteraction] = useState<string | null>(null)
 
-  // Mock stats - in real app, fetch from backend
-  return {
-    hugCount: Math.floor(Math.random() * 8), // Random between 0-7 for demo
-    feedCount: Math.floor(Math.random() * 15),
-    lastInteraction: new Date().toISOString(),
-  }
-}
+  const interact = useCallback((action: "hug" | "feed" | "play") => {
+    setStats((prevStats) => {
+      let newHappiness = prevStats.happiness
+      let newHunger = prevStats.hunger
+      let newEnergy = prevStats.energy
 
-const hugPetAPI = async (userId: string, petId: string): Promise<InteractionResult> => {
-  await new Promise((resolve) => setTimeout(resolve, 1000))
+      switch (action) {
+        case "hug":
+          newHappiness = Math.min(100, prevStats.happiness + 10)
+          toast({ title: "Hugged!", description: "Your pet feels loved." })
+          break
+        case "feed":
+          newHunger = Math.max(0, prevStats.hunger - 20)
+          newHappiness = Math.min(100, prevStats.happiness + 5)
+          toast({ title: "Fed!", description: "Your pet is full and happy." })
+          break
+        case "play":
+          newHappiness = Math.min(100, prevStats.happiness + 15)
+          newEnergy = Math.max(0, prevStats.energy - 10)
+          toast({ title: "Played!", description: "Your pet had fun playing." })
+          break
+        default:
+          break
+      }
 
-  // Mock response - in real app, call backend endpoint
-  const newHugCount = Math.floor(Math.random() * 10) + 1
-  return {
-    hugCount: newHugCount,
-    feedCount: Math.floor(Math.random() * 15),
-    achievementEarned: newHugCount >= 10,
-  }
-}
+      setLastInteraction(action)
+      return {
+        happiness: newHappiness,
+        hunger: newHunger,
+        energy: newEnergy,
+      }
+    })
+  }, [])
 
-const feedPetAPI = async (userId: string, petId: string): Promise<InteractionResult> => {
-  await new Promise((resolve) => setTimeout(resolve, 1000))
-
-  // Mock response
-  return {
-    hugCount: Math.floor(Math.random() * 10),
-    feedCount: Math.floor(Math.random() * 20) + 1,
-  }
-}
-
-export function usePetInteraction(petId: string | null) {
-  const { user } = useAuth()
-  const queryClient = useQueryClient()
-
-  const { data: petStats, refetch } = useQuery({
-    queryKey: ["pet-stats", user?.id, petId],
-    queryFn: () => fetchPetStats(user!.id, petId!),
-    enabled: !!user && !!petId,
-  })
-
-  const hugMutation = useMutation({
-    mutationFn: () => hugPetAPI(user!.id, petId!),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["pet-stats", user?.id, petId] })
-      queryClient.invalidateQueries({ queryKey: ["nfts", user?.id] })
-    },
-  })
-
-  const feedMutation = useMutation({
-    mutationFn: () => feedPetAPI(user!.id, petId!),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["pet-stats", user?.id, petId] })
-    },
-  })
+  // Simulate passive stat decay over time (e.g., every hour)
+  // In a real app, this would be handled server-side or with more robust time tracking
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     setStats(prevStats => ({
+  //       happiness: Math.max(0, prevStats.happiness - 1),
+  //       hunger: Math.min(100, prevStats.hunger + 2),
+  //       energy: Math.max(0, prevStats.energy - 1),
+  //     }));
+  //   }, 3600000); // Every hour
+  //   return () => clearInterval(interval);
+  // }, []);
 
   return {
-    petStats,
-    hugPet: hugMutation.mutateAsync,
-    feedPet: feedMutation.mutateAsync,
-    loading: hugMutation.isPending || feedMutation.isPending,
-    refetch,
+    stats,
+    lastInteraction,
+    interact,
   }
 }

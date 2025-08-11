@@ -1,46 +1,55 @@
 "use client"
 
-import { Canvas } from "@react-three/fiber"
-import { Environment } from "@react-three/drei"
-import { Suspense, type ReactNode } from "react"
+import type React from "react"
+import { useRef } from "react"
+import { Canvas, useFrame } from "@react-three/fiber"
+import { OrbitControls, Environment, Text } from "@react-three/drei"
+import type * as THREE from "three"
 
 interface EnhancedSceneProps {
-  children: ReactNode
-  environment?: string
-  enableEffects?: boolean
-  className?: string
+  children: React.ReactNode
+  title?: string
+  cameraPosition?: [number, number, number]
 }
 
-export function EnhancedScene({
-  children,
-  environment = "sunset",
-  enableEffects = true,
-  className = "w-full h-full",
-}: EnhancedSceneProps) {
+function RotatingCube() {
+  const meshRef = useRef<THREE.Mesh>(null!)
+  useFrame(() => {
+    if (meshRef.current) {
+      meshRef.current.rotation.x += 0.01
+      meshRef.current.rotation.y += 0.01
+    }
+  })
   return (
-    <div className={className}>
-      <Canvas
-        camera={{ position: [0, 0, 5], fov: 50 }}
-        shadows
-        gl={{
-          antialias: true,
-          alpha: true,
-          powerPreference: "high-performance",
-          stencil: false,
-          depth: true,
-        }}
-        dpr={[1, 2]}
-      >
-        <Suspense fallback={null}>
-          {children}
+    <mesh ref={meshRef}>
+      <boxGeometry args={[1, 1, 1]} />
+      <meshStandardMaterial color="hotpink" />
+    </mesh>
+  )
+}
 
-          <Environment preset={environment as any} background={false} blur={0.6} />
-
-          {/* Basic lighting setup since post-processing effects aren't available */}
-          <ambientLight intensity={0.4} />
-          <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
-          <pointLight position={[-10, -10, -10]} intensity={0.3} color="#60a5fa" />
-        </Suspense>
+export function EnhancedScene({ children, title, cameraPosition = [0, 0, 5] }: EnhancedSceneProps) {
+  return (
+    <div className="w-full h-screen bg-gradient-to-br from-gray-900 to-black">
+      <Canvas camera={{ position: cameraPosition, fov: 75 }}>
+        <ambientLight intensity={0.5} />
+        <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} decay={0} intensity={1} />
+        <pointLight position={[-10, -10, -10]} decay={0} intensity={1} />
+        <Environment preset="sunset" background /> {/* Use a different preset for variety */}
+        {title && (
+          <Text
+            position={[0, 2, -3]}
+            fontSize={0.5}
+            color="white"
+            anchorX="center"
+            anchorY="middle"
+            font="/fonts/Geist-Bold.ttf" // Using Geist-Bold font
+          >
+            {title}
+          </Text>
+        )}
+        {children}
+        <OrbitControls enableZoom={true} enablePan={true} />
       </Canvas>
     </div>
   )
