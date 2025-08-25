@@ -7,57 +7,38 @@ import { AuthButton } from "@/components/auth/auth-button"
 import { AuthModal } from "@/components/auth/auth-modal"
 import { WalletConnectButton } from "@/components/wallet/wallet-connect-button"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Gamepad2, Trophy, Coins, Users } from "lucide-react"
 import Link from "next/link"
-import { DailyReward } from "@/components/game/daily-reward"
-import { PetSelector } from "@/components/game/pet-selector"
-import { CardGallery } from "@/components/game/card-gallery"
-import { PetViewer } from "@/components/3d/pet-viewer"
 import { useNFTs } from "@/hooks/use-nfts"
-import { usePetInteraction } from "@/hooks/use-pet-interaction"
 
 export default function HomePage() {
   const user = useUser()
   const [showAuthModal, setShowAuthModal] = useState(false)
   const { pets, isLoading: isLoadingNFTs } = useNFTs("pets")
   const [selectedPet, setSelectedPet] = useState<(typeof pets)[0] | null>(null)
-  const { interactWithPet, isInteracting } = usePetInteraction()
 
-  // Simulate first login pet assignment
-  useEffect(() => {
-    if (user && user.isSignedIn && !selectedPet && pets && pets.length > 0) {
-      // Assign the first pet as default if none selected
-      setSelectedPet(pets[0])
-    }
-  }, [user, pets, selectedPet])
 
-  const handleRewardClaimed = (reward: { type: string; amount: number }) => {
-    console.log(`Reward claimed: ${reward.amount} ${reward.type}`)
-    // Here you would update user's balance in your backend/state
-  }
-
-  const gameFeatures = [
-    {
-      icon: <Gamepad2 className="h-8 w-8" />,
-      title: "Interactive Games",
-      description: "Play engaging card games and pet collection adventures",
-    },
-    {
-      icon: <Trophy className="h-8 w-8" />,
-      title: "NFT Rewards",
-      description: "Earn unique NFT cards and pets as you progress",
-    },
-    {
-      icon: <Coins className="h-8 w-8" />,
-      title: "Daily Rewards",
-      description: "Collect daily bonuses and special items",
-    },
-    {
-      icon: <Users className="h-8 w-8" />,
-      title: "Community",
-      description: "Trade and compete with other players",
-    },
-  ]
+  // const gameFeatures = [
+  //   {
+  //     icon: <Gamepad2 className="h-8 w-8" />,
+  //     title: "Interactive Games",
+  //     description: "Play engaging card games and pet collection adventures",
+  //   },
+  //   {
+  //     icon: <Trophy className="h-8 w-8" />,
+  //     title: "NFT Rewards",
+  //     description: "Earn unique NFT cards and pets as you progress",
+  //   },
+  //   {
+  //     icon: <Coins className="h-8 w-8" />,
+  //     title: "Daily Rewards",
+  //     description: "Collect daily bonuses and special items",
+  //   },
+  //   {
+  //     icon: <Users className="h-8 w-8" />,
+  //     title: "Community",
+  //     description: "Trade and compete with other players",
+  //   },
+  // ]
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white">
@@ -117,7 +98,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="space-y-8">
+        {/* <section className="space-y-8">
           <h3 className="text-4xl font-bold text-center text-purple-400">Your Digital Companions</h3>
           {user?.isSignedIn && pets && pets.length > 0 ? (
             <PetSelector pets={pets} selectedPet={selectedPet || undefined} onSelectPet={setSelectedPet} />
@@ -135,17 +116,17 @@ export default function HomePage() {
               />
             </div>
           )}
-        </section>
+        </section> */}
 
-        <section className="space-y-8">
+        {/* <section className="space-y-8">
           <h3 className="text-4xl font-bold text-center text-purple-400">Daily Rewards</h3>
           <DailyReward onRewardClaimed={handleRewardClaimed} />
-        </section>
+        </section> */}
 
-        <section className="space-y-8">
+        {/* <section className="space-y-8">
           <h3 className="text-4xl font-bold text-center text-purple-400">Featured Cards</h3>
           <CardGallery />
-        </section>
+        </section> */}
       </main>
 
       <footer className="container mx-auto px-4 py-6 text-center text-gray-500">
