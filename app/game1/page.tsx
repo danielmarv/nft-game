@@ -1,194 +1,168 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { useCardGame } from "@/hooks/use-card-game"
-import { ArrowLeft, Swords, Shield, Heart, Zap, RefreshCw } from "lucide-react"
-import Link from "next/link"
-import { useState } from "react"
-import { toast } from "@/hooks/use-toast"
+import React, { useEffect, useRef, useState } from "react"
+import * as BABYLON from "@babylonjs/core"
+import "@babylonjs/loaders"
+import { usePetInteraction, PetNFT } from "@/hooks/use-pet-interaction"
 
-export default function CardGamePage() {
-  const {
-    playerHealth,
-    enemyHealth,
-    playerEnergy,
-    enemyEnergy,
-    playerHand,
-    enemyHand,
-    playerDeckCount,
-    enemyDeckCount,
-    playerDiscardCount,
-    enemyDiscardCount,
-    isPlayerTurn,
-    gameLog,
-    playCard,
-    endTurn,
-    resetGame,
-    isGameOver,
-    gameResult,
-  } = useCardGame()
+const MOCK_PETS: PetNFT[] = [
+  { id: "1", name: "Dragon", glbUrl: "https://assets.babylonjs.com/meshes/HVGirl.glb", type: 2 },
+  { id: "2", name: "Unicorn", glbUrl: "https://assets.babylonjs.com/meshes/HVGirl.glb", type: 2 },
+]
 
-  const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null)
+export default function NFTPetGameAdvanced() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const engineRef = useRef<BABYLON.Engine | null>(null)
+  const sceneRef = useRef<BABYLON.Scene | null>(null)
+  const petMeshesRef = useRef<BABYLON.AbstractMesh | null>(null)
+  const animGroupRef = useRef<BABYLON.AnimationGroup | null>(null)
 
-  const handlePlayCard = () => {
-    if (selectedCardIndex !== null) {
-      playCard(selectedCardIndex)
-      setSelectedCardIndex(null) // Deselect card after playing
-    } else {
-      toast({
-        title: "No Card Selected",
-        description: "Please select a card from your hand to play.",
-        variant: "destructive",
-      })
+  const { selectedPetId, petsStats, interact, selectPet } = usePetInteraction(MOCK_PETS)
+  const selectedPet = MOCK_PETS.find((p) => p.id === selectedPetId) || MOCK_PETS[0]
+  const selectedStats = petsStats[selectedPetId]
+
+  // Initialize Babylon scene
+  useEffect(() => {
+    if (!canvasRef.current) return
+    const engine = new BABYLON.Engine(canvasRef.current, true, { preserveDrawingBuffer: true, stencil: true })
+    engineRef.current = engine
+    const scene = new BABYLON.Scene(engine)
+    sceneRef.current = scene
+
+    // Camera
+    const camera = new BABYLON.ArcRotateCamera("cam", Math.PI / 2, Math.PI / 3, 6, BABYLON.Vector3.Zero(), scene)
+    camera.attachControl(canvasRef.current, true)
+    camera.wheelDeltaPercentage = 0.01
+
+    // Light
+    const hemi = new BABYLON.HemisphericLight("hemi", new BABYLON.Vector3(0, 1, 0), scene)
+    hemi.intensity = 0.8
+
+    // Ground
+    const ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 10, height: 10 }, scene)
+    const groundMat = new BABYLON.StandardMaterial("groundMat", scene)
+    groundMat.diffuseColor = new BABYLON.Color3(0.1, 0.1, 0.15)
+    ground.material = groundMat
+
+    // Floating particle system
+    const particleSystem = new BABYLON.ParticleSystem("particles", 2000, scene)
+    particleSystem.particleTexture = new BABYLON.Texture("https://assets.babylonjs.com/particles/flare.png", scene)
+    particleSystem.minEmitBox = new BABYLON.Vector3(-5, 0, -5)
+    particleSystem.maxEmitBox = new BABYLON.Vector3(5, 5, 5)
+    particleSystem.color1 = new BABYLON.Color4(0.5, 0.8, 1, 1)
+    particleSystem.color2 = new BABYLON.Color4(0.2, 0.5, 1, 1)
+    particleSystem.minSize = 0.05
+    particleSystem.maxSize = 0.15
+    particleSystem.minLifeTime = 2
+    particleSystem.maxLifeTime = 5
+    particleSystem.emitRate = 10
+    particleSystem.start()
+
+    engine.runRenderLoop(() => scene.render())
+    return () => engine.dispose()
+  }, [])
+
+  // Load or switch pet
+  useEffect(() => {
+    if (!selectedPet || !sceneRef.current) return
+    const scene = sceneRef.current
+
+    if (petMeshesRef.current) {
+      petMeshesRef.current.dispose()
+      animGroupRef.current?.stop()
     }
+
+    BABYLON.SceneLoader.ImportMeshAsync("", selectedPet.glbUrl, "", scene).then((result) => {
+      const mesh = result.meshes[0]
+      mesh.scaling.scaleInPlace(0.08)
+      mesh.position.y = 0
+      mesh.position.z = 0
+      petMeshesRef.current = mesh
+
+      // Idle animation: either named "Idle" or first animation
+      const animGroup = scene.getAnimationGroupByName("Idle") || result.animationGroups[0]
+      animGroup?.start(true)
+      animGroupRef.current = animGroup
+    })
+  }, [selectedPet])
+
+  // Interaction effect
+  const handleInteraction = (action: "hug" | "feed" | "play") => {
+    interact(action)
+    if (!sceneRef.current || !petMeshesRef.current) return
+    const scene = sceneRef.current
+
+    // Bounce animation
+    const anim = new BABYLON.Animation("bounce", "position.y", 60, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CYCLE)
+    const startY = petMeshesRef.current.position.y
+    anim.setKeys([
+      { frame: 0, value: startY },
+      { frame: 10, value: startY + 0.3 },
+      { frame: 20, value: startY },
+    ])
+    petMeshesRef.current.animations = [anim]
+    scene.beginAnimation(petMeshesRef.current, 0, 20, false)
+
+    // Particle burst
+    const burst = new BABYLON.ParticleSystem("burst", 500, scene)
+    burst.particleTexture = new BABYLON.Texture("https://assets.babylonjs.com/particles/flare.png", scene)
+    burst.emitter = petMeshesRef.current.position.clone()
+    burst.minEmitBox = new BABYLON.Vector3(0, 0, 0)
+    burst.maxEmitBox = new BABYLON.Vector3(0, 0, 0)
+    burst.color1 = new BABYLON.Color4(1, 0.5, 0.5, 1)
+    burst.color2 = new BABYLON.Color4(1, 1, 0, 1)
+    burst.minSize = 0.05
+    burst.maxSize = 0.15
+    burst.minLifeTime = 0.5
+    burst.maxLifeTime = 1
+    burst.emitRate = 100
+    burst.direction1 = new BABYLON.Vector3(-1, 1, -1)
+    burst.direction2 = new BABYLON.Vector3(1, 1, 1)
+    burst.start()
+    setTimeout(() => burst.stop(), 300)
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white p-4">
-      <div className="container mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <Link href="/">
-            <Button variant="outline" className="text-white border-white/20 hover:bg-white/10 bg-transparent">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Home
-            </Button>
-          </Link>
-          <h1 className="text-4xl font-bold text-center">Card Battle Arena</h1>
-          <Button onClick={resetGame} variant="secondary">
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Reset Game
-          </Button>
+    <div className="w-full h-screen bg-gradient-to-br from-slate-900 to-black flex flex-col relative">
+      {/* Pet selection menu */}
+      {MOCK_PETS.length > 1 && (
+        <div className="absolute top-4 left-4 flex gap-2 bg-white/10 p-2 rounded-lg z-10">
+          {MOCK_PETS.map((pet) => (
+            <button
+              key={pet.id}
+              onClick={() => selectPet(pet.id)}
+              className={`px-3 py-1 rounded ${selectedPetId === pet.id ? "bg-cyan-500 text-white" : "bg-gray-700 text-gray-200"}`}
+            >
+              {pet.name}
+            </button>
+          ))}
         </div>
+      )}
 
-        {isGameOver && (
-          <Card className="mb-6 bg-blue-900/50 border-blue-700 text-center">
-            <CardHeader>
-              <CardTitle className="text-3xl">Game Over!</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold mb-4">{gameResult}</p>
-              <Button onClick={resetGame} size="lg">
-                Play Again
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Enemy Area */}
-          <Card className="lg:col-span-3 bg-red-900/30 border-red-700/50">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Enemy</span>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1">
-                    <Heart className="h-5 w-5 text-red-400" />
-                    <span>{enemyHealth}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Zap className="h-5 w-5 text-yellow-400" />
-                    <span>{enemyEnergy}</span>
-                  </div>
-                </div>
-              </CardTitle>
-              <CardDescription>
-                <Progress value={(enemyHealth / 100) * 100} className="h-2 bg-red-500" />
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <h3 className="text-lg font-semibold mb-2">Enemy Hand ({enemyHand.length} cards)</h3>
-              <div className="flex flex-wrap gap-2">
-                {enemyHand.map((card, index) => (
-                  <Card key={index} className="w-24 h-32 bg-gray-700 flex items-center justify-center text-sm">
-                    Enemy Card
-                  </Card>
-                ))}
-              </div>
-              <div className="mt-4 text-sm text-muted-foreground">
-                Deck: {enemyDeckCount} | Discard: {enemyDiscardCount}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Game Log */}
-          <Card className="lg:col-span-1 bg-gray-800/50 border-gray-700/50">
-            <CardHeader>
-              <CardTitle>Game Log</CardTitle>
-            </CardHeader>
-            <CardContent className="h-64 overflow-y-auto text-sm">
-              {gameLog.map((log, index) => (
-                <p key={index} className="mb-1">
-                  {log}
-                </p>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* Player Area */}
-          <Card className="lg:col-span-2 bg-blue-900/30 border-blue-700/50">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Player</span>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1">
-                    <Heart className="h-5 w-5 text-red-400" />
-                    <span>{playerHealth}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Zap className="h-5 w-5 text-yellow-400" />
-                    <span>{playerEnergy}</span>
-                  </div>
-                </div>
-              </CardTitle>
-              <CardDescription>
-                <Progress value={(playerHealth / 100) * 100} className="h-2 bg-blue-500" />
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <h3 className="text-lg font-semibold mb-2">Your Hand ({playerHand.length} cards)</h3>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {playerHand.map((card, index) => (
-                  <Card
-                    key={index}
-                    className={`w-28 h-40 cursor-pointer transition-all duration-200 ${
-                      selectedCardIndex === index ? "ring-2 ring-yellow-400 scale-105" : ""
-                    } ${!isPlayerTurn ? "opacity-50 cursor-not-allowed" : ""}`}
-                    onClick={() => isPlayerTurn && setSelectedCardIndex(index)}
-                  >
-                    <CardHeader className="p-2 pb-0">
-                      <CardTitle className="text-md">{card.name}</CardTitle>
-                      <CardDescription className="text-xs">Cost: {card.cost}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-2 text-xs">
-                      <p>{card.description}</p>
-                      <div className="flex items-center gap-1 mt-1">
-                        {card.type === "attack" && <Swords className="h-3 w-3" />}
-                        {card.type === "defense" && <Shield className="h-3 w-3" />}
-                        <span>{card.value}</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-              <div className="flex justify-between items-center mt-4">
-                <div className="text-sm text-muted-foreground">
-                  Deck: {playerDeckCount} | Discard: {playerDiscardCount}
-                </div>
-                <div className="flex gap-2">
-                  <Button onClick={handlePlayCard} disabled={!isPlayerTurn || selectedCardIndex === null}>
-                    Play Card
-                  </Button>
-                  <Button onClick={endTurn} disabled={!isPlayerTurn} variant="secondary">
-                    End Turn
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      {/* Interaction buttons */}
+      <div className="absolute bottom-4 left-4 flex gap-2 bg-white/10 p-2 rounded-lg z-10">
+        <button onClick={() => handleInteraction("hug")} className="px-3 py-1 rounded bg-pink-500 text-white">
+          Hug
+        </button>
+        <button onClick={() => handleInteraction("feed")} className="px-3 py-1 rounded bg-green-500 text-white">
+          Feed
+        </button>
+        <button onClick={() => handleInteraction("play")} className="px-3 py-1 rounded bg-yellow-500 text-black">
+          Play
+        </button>
       </div>
+
+      {/* Stats display */}
+      {selectedStats && (
+        <div className="absolute bottom-4 right-4 bg-white/10 p-2 rounded-lg text-white z-10">
+          <div>Happiness: {selectedStats.happiness}</div>
+          <div>Hunger: {selectedStats.hunger}</div>
+          <div>Energy: {selectedStats.energy}</div>
+        </div>
+      )}
+
+      {/* Canvas */}
+      <canvas ref={canvasRef} style={{ flex: 1 }} />
     </div>
   )
 }

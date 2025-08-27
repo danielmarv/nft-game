@@ -3,72 +3,89 @@
 import { useState, useCallback } from "react"
 import { toast } from "@/hooks/use-toast"
 
-interface PetStats {
+export interface PetNFT {
+  id: string
+  name: string
+  type: number
+  glbUrl: string
+}
+
+export interface PetStats {
   happiness: number
   hunger: number
   energy: number
 }
 
-const initialStats: PetStats = {
+// Default stats for a new pet
+const DEFAULT_STATS: PetStats = {
   happiness: 70,
   hunger: 50,
   energy: 80,
 }
 
-export function usePetInteraction(petId: string) {
-  const [stats, setStats] = useState<PetStats>(initialStats)
+export function usePetInteraction(initialPets: PetNFT[]) {
+  // Store all pets' stats in a dictionary: { [petId]: PetStats }
+  const [petsStats, setPetsStats] = useState<Record<string, PetStats>>(
+    () => Object.fromEntries(initialPets.map((p) => [p.id, { ...DEFAULT_STATS }]))
+  )
+
+  const [selectedPetId, setSelectedPetId] = useState<string>(
+    initialPets.length > 0 ? initialPets[0].id : ""
+  )
+
   const [lastInteraction, setLastInteraction] = useState<string | null>(null)
 
-  const interact = useCallback((action: "hug" | "feed" | "play") => {
-    setStats((prevStats) => {
-      let newHappiness = prevStats.happiness
-      let newHunger = prevStats.hunger
-      let newEnergy = prevStats.energy
+  // Interact with currently selected pet
+  const interact = useCallback(
+    (action: "hug" | "feed" | "play") => {
+      if (!selectedPetId) return
 
-      switch (action) {
-        case "hug":
-          newHappiness = Math.min(100, prevStats.happiness + 10)
-          toast({ title: "Hugged!", description: "Your pet feels loved." })
-          break
-        case "feed":
-          newHunger = Math.max(0, prevStats.hunger - 20)
-          newHappiness = Math.min(100, prevStats.happiness + 5)
-          toast({ title: "Fed!", description: "Your pet is full and happy." })
-          break
-        case "play":
-          newHappiness = Math.min(100, prevStats.happiness + 15)
-          newEnergy = Math.max(0, prevStats.energy - 10)
-          toast({ title: "Played!", description: "Your pet had fun playing." })
-          break
-        default:
-          break
-      }
+      setPetsStats((prevStats) => {
+        const stats = prevStats[selectedPetId] || { ...DEFAULT_STATS }
+        let { happiness, hunger, energy } = stats
 
-      setLastInteraction(action)
-      return {
-        happiness: newHappiness,
-        hunger: newHunger,
-        energy: newEnergy,
-      }
-    })
-  }, [])
+        switch (action) {
+          case "hug":
+            happiness = Math.min(100, happiness + 10)
+            toast({ title: "Hugged!", description: "Your pet feels loved." })
+            break
+          case "feed":
+            hunger = Math.max(0, hunger - 20)
+            happiness = Math.min(100, happiness + 5)
+            toast({ title: "Fed!", description: "Your pet is full and happy." })
+            break
+          case "play":
+            happiness = Math.min(100, happiness + 15)
+            energy = Math.max(0, energy - 10)
+            toast({ title: "Played!", description: "Your pet had fun playing." })
+            break
+        }
 
-  // Simulate passive stat decay over time (e.g., every hour)
-  // In a real app, this would be handled server-side or with more robust time tracking
-  // useEffect(() => {
-  //   const interval = setInterval(() => {
-  //     setStats(prevStats => ({
-  //       happiness: Math.max(0, prevStats.happiness - 1),
-  //       hunger: Math.min(100, prevStats.hunger + 2),
-  //       energy: Math.max(0, prevStats.energy - 1),
-  //     }));
-  //   }, 3600000); // Every hour
-  //   return () => clearInterval(interval);
-  // }, []);
+        setLastInteraction(action)
+
+        return {
+          ...prevStats,
+          [selectedPetId]: { happiness, hunger, energy },
+        }
+      })
+    },
+    [selectedPetId]
+  )
+
+  // Switch active pet
+  const selectPet = useCallback((petId: string) => {
+    if (!petsStats[petId]) {
+      // Initialize new pet stats if not present
+      setPetsStats((prev) => ({ ...prev, [petId]: { ...DEFAULT_STATS } }))
+    }
+    setSelectedPetId(petId)
+  }, [petsStats])
 
   return {
-    stats,
+    selectedPetId,
+    petsStats,
     lastInteraction,
     interact,
+    selectPet,
   }
 }
