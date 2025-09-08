@@ -106,7 +106,6 @@ export default function PremiumNFTPetGame() {
   useEffect(() => {
     const loadBabylon = async () => {
       try {
-        console.log("[v0] Loading Babylon.js...")
         const babylonCore = await import("@babylonjs/core")
 
         BABYLON = babylonCore
@@ -122,10 +121,10 @@ export default function PremiumNFTPetGame() {
         Animation = babylonCore.Animation
         StandardMaterial = babylonCore.StandardMaterial
 
-        console.log("[v0] Babylon.js loaded successfully")
+        console.log("Babylon.js loaded successfully")
         setBabylonLoaded(true)
       } catch (error) {
-        console.error("[v0] Failed to load Babylon.js:", error)
+        console.error("Failed to load Babylon.js:", error)
       }
     }
 
@@ -141,7 +140,7 @@ export default function PremiumNFTPetGame() {
 
   const createEnhancedPet = (scene: any, pet: NFTPet) => {
     try {
-      console.log("[v0] Creating pet:", pet.name)
+      console.log(" Creating pet:", pet.name)
 
       if (petRef.current) {
         petRef.current.dispose()
@@ -302,16 +301,16 @@ export default function PremiumNFTPetGame() {
       petNode.animations = [idleAnim, rotateAnim]
       scene.beginAnimation(petNode, 0, 300, true)
 
-      console.log("[v0] Pet created successfully:", pet.name)
+      console.log(" Pet created successfully:", pet.name)
     } catch (error) {
-      console.error("[v0] Error creating pet:", error)
+      console.error(" Error creating pet:", error)
     }
   }
 
   useEffect(() => {
     if (!babylonLoaded || !canvasRef.current) return
 
-    console.log("[v0] Initializing 3D scene...")
+    console.log(" Initializing 3D scene...")
 
     try {
       const engine = new Engine(canvasRef.current, true, {
@@ -356,14 +355,14 @@ export default function PremiumNFTPetGame() {
       }
       window.addEventListener("resize", handleResize)
 
-      console.log("[v0] 3D scene initialized successfully")
+      console.log(" 3D scene initialized successfully")
 
       return () => {
         window.removeEventListener("resize", handleResize)
         engine.dispose()
       }
     } catch (error) {
-      console.error("[v0] Error initializing 3D scene:", error)
+      console.error(" Error initializing 3D scene:", error)
     }
   }, [babylonLoaded])
 
@@ -383,7 +382,7 @@ export default function PremiumNFTPetGame() {
       let coinsEarned = 0
       let expGained = 0
 
-      console.log("[v0] Interaction:", action)
+      console.log(" Interaction:", action)
 
       switch (action) {
         case "hug":
