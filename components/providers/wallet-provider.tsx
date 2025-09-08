@@ -35,7 +35,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           name: "Hedera Gaming Platform",
           description: "A Web3 gaming platform built on Hedera",
           url: window.location.origin,
-          icons: [`${window.location.origin}/favicon.ico`],
+          icons: [`${window.location.origin}/logo.png`],
         }
 
         const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID

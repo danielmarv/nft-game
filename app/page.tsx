@@ -98,16 +98,6 @@ export default function HomePage() {
           </div>
         </section>
 
-
-        {/* <section className="space-y-8">
-          <h3 className="text-4xl font-bold text-center text-purple-400">Daily Rewards</h3>
-          <DailyReward onRewardClaimed={handleRewardClaimed} />
-        </section> */}
-
-        {/* <section className="space-y-8">
-          <h3 className="text-4xl font-bold text-center text-purple-400">Featured Cards</h3>
-          <CardGallery />
-        </section> */}
       </main>
 
       <footer className="container mx-auto px-4 py-6 text-center text-gray-500">
