@@ -98,25 +98,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* <section className="space-y-8">
-          <h3 className="text-4xl font-bold text-center text-purple-400">Your Digital Companions</h3>
-          {user?.isSignedIn && pets && pets.length > 0 ? (
-            <PetSelector pets={pets} selectedPet={selectedPet || undefined} onSelectPet={setSelectedPet} />
-          ) : (
-            <p className="text-muted-foreground">Sign in to see your pets!</p>
-          )}
-          {selectedPet && (
-            <div className="mt-4 h-[400px]">
-              <PetViewer
-                key={selectedPet.id} // Key changes to remount and animate new pet
-                petId={selectedPet.id}
-                onHug={() => interactWithPet(selectedPet.id, "hug")}
-                onFeed={() => interactWithPet(selectedPet.id, "feed")}
-                isInteracting={isInteracting}
-              />
-            </div>
-          )}
-        </section> */}
 
         {/* <section className="space-y-8">
           <h3 className="text-4xl font-bold text-center text-purple-400">Daily Rewards</h3>
