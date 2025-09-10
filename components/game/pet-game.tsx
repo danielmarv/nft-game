@@ -1,26 +1,16 @@
 "use client"
 
-import { useEffect, useRef, useState, useCallback } from "react"
+import { useState, useCallback, Suspense } from "react"
+import { Canvas } from "@react-three/fiber"
+import { OrbitControls, Environment, PerspectiveCamera, Stars } from "@react-three/drei"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Trophy, Star, Heart, Zap, Coins, Crown, Sparkles, Gift } from "lucide-react"
+import { Trophy, Star, Heart, Zap, Coins, Crown, Sparkles, Gift, Gamepad2, Users, Award } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
-
-let BABYLON: any = null
-let Engine: any = null
-let Scene: any = null
-let ArcRotateCamera: any = null
-let HemisphericLight: any = null
-let DirectionalLight: any = null
-let MeshBuilder: any = null
-let Vector3: any = null
-let Color3: any = null
-let Color4: any = null
-let Animation: any = null
-let StandardMaterial: any = null
+import { EnhancedPetModel } from "./pet-model"
 
 interface NFTPet {
   id: string
@@ -44,17 +34,17 @@ interface NFTPet {
   }
 }
 
-const MOCK_PETS: NFTPet[] = [
+const ENHANCED_PETS: NFTPet[] = [
   {
     id: "1",
     name: "Ember",
     type: "Dragon",
     rarity: "Legendary",
-    level: 15,
-    experience: 750,
-    stats: { happiness: 85, energy: 90, strength: 95, magic: 88, speed: 70 },
-    traits: ["Fire Breath", "Ancient Wisdom", "Treasure Guardian"],
-    value: 2.5,
+    level: 18,
+    experience: 850,
+    stats: { happiness: 88, energy: 92, strength: 98, magic: 90, speed: 75 },
+    traits: ["Fire Breath", "Ancient Wisdom", "Treasure Guardian", "Battle Fury"],
+    value: 3.2,
     breeding: { canBreed: true, cooldown: 0 },
   },
   {
@@ -62,11 +52,11 @@ const MOCK_PETS: NFTPet[] = [
     name: "Stardust",
     type: "Unicorn",
     rarity: "Epic",
-    level: 12,
-    experience: 600,
-    stats: { happiness: 95, energy: 85, strength: 60, magic: 98, speed: 85 },
-    traits: ["Healing Aura", "Pure Heart", "Rainbow Mane"],
-    value: 1.8,
+    level: 15,
+    experience: 720,
+    stats: { happiness: 98, energy: 88, strength: 65, magic: 100, speed: 88 },
+    traits: ["Healing Aura", "Pure Heart", "Rainbow Mane", "Celestial Magic"],
+    value: 2.1,
     breeding: { canBreed: true, cooldown: 0 },
   },
   {
@@ -74,437 +64,206 @@ const MOCK_PETS: NFTPet[] = [
     name: "Blaze",
     type: "Phoenix",
     rarity: "Mythic",
-    level: 20,
-    experience: 1000,
-    stats: { happiness: 90, energy: 100, strength: 85, magic: 95, speed: 90 },
-    traits: ["Rebirth", "Solar Flare", "Eternal Flame"],
-    value: 5.2,
-    breeding: { canBreed: false, cooldown: 24 },
+    level: 25,
+    experience: 1200,
+    stats: { happiness: 95, energy: 100, strength: 90, magic: 98, speed: 95 },
+    traits: ["Rebirth", "Solar Flare", "Eternal Flame", "Phoenix Rising", "Immortal Spirit"],
+    value: 7.8,
+    breeding: { canBreed: false, cooldown: 48 },
+  },
+  {
+    id: "4",
+    name: "Storm",
+    type: "Griffin",
+    rarity: "Rare",
+    level: 10,
+    experience: 450,
+    stats: { happiness: 80, energy: 85, strength: 88, magic: 70, speed: 92 },
+    traits: ["Wind Walker", "Eagle Eye", "Lion's Courage"],
+    value: 1.4,
+    breeding: { canBreed: true, cooldown: 0 },
   },
 ]
 
-const ACHIEVEMENTS = [
-  { id: 1, name: "First Pet", description: "Acquire your first NFT pet", unlocked: true, reward: 100 },
-  { id: 2, name: "Breeder", description: "Successfully breed 5 pets", unlocked: false, reward: 500 },
-  { id: 3, name: "Champion", description: "Win 10 battles", unlocked: false, reward: 1000 },
-  { id: 4, name: "Collector", description: "Own 10 different pets", unlocked: false, reward: 2000 },
+const ENHANCED_ACHIEVEMENTS = [
+  {
+    id: 1,
+    name: "First Bond",
+    description: "Form your first connection with a pet",
+    unlocked: true,
+    reward: 150,
+    icon: Heart,
+  },
+  {
+    id: 2,
+    name: "Master Breeder",
+    description: "Successfully breed 10 unique pets",
+    unlocked: false,
+    reward: 750,
+    icon: Users,
+  },
+  {
+    id: 3,
+    name: "Battle Champion",
+    description: "Win 25 battles in the arena",
+    unlocked: false,
+    reward: 1500,
+    icon: Trophy,
+  },
+  {
+    id: 4,
+    name: "Legendary Collector",
+    description: "Own 5 Legendary or Mythic pets",
+    unlocked: false,
+    reward: 3000,
+    icon: Crown,
+  },
+  {
+    id: 5,
+    name: "Pet Whisperer",
+    description: "Reach max happiness with 5 pets",
+    unlocked: true,
+    reward: 500,
+    icon: Sparkles,
+  },
+  { id: 6, name: "Arena Master", description: "Achieve a 20-win streak", unlocked: false, reward: 2500, icon: Award },
 ]
 
+function Scene({
+  selectedPet,
+  isInteracting,
+  lastInteraction,
+}: {
+  selectedPet: NFTPet
+  isInteracting: boolean
+  lastInteraction: string | null
+}) {
+  return (
+    <>
+      <PerspectiveCamera makeDefault position={[0, 2, 6]} />
+      <OrbitControls
+        enablePan={false}
+        minDistance={3}
+        maxDistance={10}
+        minPolarAngle={Math.PI / 6}
+        maxPolarAngle={Math.PI / 2}
+      />
+
+      {/* Enhanced environment */}
+      <Environment preset="sunset" />
+      <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
+
+      {/* Lighting */}
+      <ambientLight intensity={0.4} />
+      <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
+      <pointLight position={[-10, -10, -5]} intensity={0.5} color="#4444ff" />
+
+      {/* Ground with better material */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1, 0]} receiveShadow>
+        <planeGeometry args={[20, 20]} />
+        <meshPhongMaterial color="#1a1a2e" shininess={100} />
+      </mesh>
+
+      {/* Enhanced pet model */}
+      <EnhancedPetModel pet={selectedPet} isInteracting={isInteracting} lastInteraction={lastInteraction} />
+    </>
+  )
+}
+
 export default function PremiumNFTPetGame() {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null)
-  const sceneRef = useRef<any>(null)
-  const petRef = useRef<any>(null)
-  const engineRef = useRef<any>(null)
-  const [babylonLoaded, setBabylonLoaded] = useState(false)
-
-  const [pets] = useState<NFTPet[]>(MOCK_PETS)
-  const [selectedPet, setSelectedPet] = useState<NFTPet>(MOCK_PETS[0])
+  const [pets] = useState<NFTPet[]>(ENHANCED_PETS)
+  const [selectedPet, setSelectedPet] = useState<NFTPet>(ENHANCED_PETS[0])
   const [activeTab, setActiveTab] = useState("game")
-  const [coins, setCoins] = useState(1250)
+  const [coins, setCoins] = useState(2150)
   const [lastInteraction, setLastInteraction] = useState<string | null>(null)
-
-  useEffect(() => {
-    const loadBabylon = async () => {
-      try {
-        const babylonCore = await import("@babylonjs/core")
-
-        BABYLON = babylonCore
-        Engine = babylonCore.Engine
-        Scene = babylonCore.Scene
-        ArcRotateCamera = babylonCore.ArcRotateCamera
-        HemisphericLight = babylonCore.HemisphericLight
-        DirectionalLight = babylonCore.DirectionalLight
-        MeshBuilder = babylonCore.MeshBuilder
-        Vector3 = babylonCore.Vector3
-        Color3 = babylonCore.Color3
-        Color4 = babylonCore.Color4
-        Animation = babylonCore.Animation
-        StandardMaterial = babylonCore.StandardMaterial
-
-        console.log("Babylon.js loaded successfully")
-        setBabylonLoaded(true)
-      } catch (error) {
-        console.error("Failed to load Babylon.js:", error)
-      }
-    }
-
-    loadBabylon()
-  }, [])
-
-  const createMaterial = (scene: any, name: string, color: any) => {
-    const material = new StandardMaterial(name, scene)
-    material.diffuseColor = color
-    material.specularColor = new Color3(0.2, 0.2, 0.2)
-    return material
-  }
-
-  const createEnhancedPet = (scene: any, pet: NFTPet) => {
-    try {
-      console.log(" Creating pet:", pet.name)
-
-      if (petRef.current) {
-        petRef.current.dispose()
-        petRef.current = null
-      }
-
-      // Create pet container
-      const petNode = new BABYLON.TransformNode("petNode", scene)
-
-      // Enhanced materials based on pet type and rarity
-      let baseColor = new Color3(0.8, 0.8, 0.8)
-
-      switch (pet.type) {
-        case "Dragon":
-          baseColor = new Color3(0.9, 0.2, 0.1)
-          break
-        case "Unicorn":
-          baseColor = new Color3(1, 0.95, 1)
-          break
-        case "Phoenix":
-          baseColor = new Color3(1, 0.6, 0.1)
-          break
-        case "Griffin":
-          baseColor = new Color3(0.7, 0.5, 0.3)
-          break
-        case "Pegasus":
-          baseColor = new Color3(0.9, 0.9, 0.95)
-          break
-      }
-
-      const bodyMaterial = createMaterial(scene, "bodyMat", baseColor)
-
-      // Enhanced body with better proportions
-      const body = MeshBuilder.CreateSphere(
-        "body",
-        {
-          diameterX: 1.4,
-          diameterY: 1.8,
-          diameterZ: 1.2,
-          segments: 16,
-        },
-        scene,
-      )
-      body.material = bodyMaterial
-      body.position.y = 1.2
-      body.parent = petNode
-
-      // Detailed head
-      const head = MeshBuilder.CreateSphere("head", { diameter: 0.8, segments: 16 }, scene)
-      head.material = bodyMaterial
-      head.position.y = 2.3
-      head.position.z = 0.3
-      head.parent = petNode
-
-      // Enhanced eyes with glow
-      const eyeMaterial = createMaterial(scene, "eyeMat", new Color3(0.1, 0.8, 1))
-      eyeMaterial.emissiveColor = new Color3(0.1, 0.4, 0.8)
-
-      const eyeLeft = MeshBuilder.CreateSphere("eyeLeft", { diameter: 0.18 }, scene)
-      eyeLeft.material = eyeMaterial
-      eyeLeft.position = new Vector3(-0.22, 2.35, 0.55)
-      eyeLeft.parent = petNode
-
-      const eyeRight = MeshBuilder.CreateSphere("eyeRight", { diameter: 0.18 }, scene)
-      eyeRight.material = eyeMaterial
-      eyeRight.position = new Vector3(0.22, 2.35, 0.55)
-      eyeRight.parent = petNode
-
-      // Type-specific features
-      if (pet.type === "Dragon") {
-        // Wings
-        const wingMaterial = createMaterial(scene, "wingMat", new Color3(0.6, 0.1, 0.1))
-        const wingLeft = MeshBuilder.CreateBox("wingLeft", { width: 0.8, height: 1.2, depth: 0.1 }, scene)
-        wingLeft.material = wingMaterial
-        wingLeft.position = new Vector3(-0.8, 1.5, -0.2)
-        wingLeft.rotation.z = Math.PI / 6
-        wingLeft.parent = petNode
-
-        const wingRight = MeshBuilder.CreateBox("wingRight", { width: 0.8, height: 1.2, depth: 0.1 }, scene)
-        wingRight.material = wingMaterial
-        wingRight.position = new Vector3(0.8, 1.5, -0.2)
-        wingRight.rotation.z = -Math.PI / 6
-        wingRight.parent = petNode
-
-        // Spikes
-        for (let i = 0; i < 3; i++) {
-          const spike = MeshBuilder.CreateCylinder(
-            "spike",
-            { height: 0.4, diameterTop: 0.05, diameterBottom: 0.15 },
-            scene,
-          )
-          spike.material = bodyMaterial
-          spike.position = new Vector3(0, 1.8 + i * 0.3, -0.6 - i * 0.2)
-          spike.parent = petNode
-        }
-      }
-
-      if (pet.type === "Unicorn") {
-        // Horn with spiral texture
-        const hornMaterial = createMaterial(scene, "hornMat", new Color3(1, 0.9, 0.7))
-        hornMaterial.emissiveColor = new Color3(0.3, 0.2, 0.4)
-        const horn = MeshBuilder.CreateCylinder("horn", { height: 0.8, diameterTop: 0.05, diameterBottom: 0.25 }, scene)
-        horn.material = hornMaterial
-        horn.position.y = 2.8
-        horn.position.z = 0.2
-        horn.rotation.x = Math.PI / 12
-        horn.parent = petNode
-      }
-
-      if (pet.type === "Phoenix") {
-        // Flame crown
-        const flameMaterial = createMaterial(scene, "flameMat", new Color3(1, 0.4, 0.1))
-        flameMaterial.emissiveColor = new Color3(1, 0.6, 0.2)
-        for (let i = 0; i < 5; i++) {
-          const flame = MeshBuilder.CreateCylinder(
-            "flame",
-            { height: 0.6, diameterTop: 0.1, diameterBottom: 0.2 },
-            scene,
-          )
-          flame.material = flameMaterial
-          flame.position = new Vector3(
-            Math.sin((i * Math.PI * 2) / 5) * 0.3,
-            2.7,
-            Math.cos((i * Math.PI * 2) / 5) * 0.3,
-          )
-          flame.parent = petNode
-        }
-      }
-
-      petRef.current = petNode
-
-      // Enhanced idle animation with floating effect
-      const idleAnim = new Animation(
-        "idle",
-        "position.y",
-        60,
-        Animation.ANIMATIONTYPE_FLOAT,
-        Animation.ANIMATIONLOOPMODE_CYCLE,
-      )
-      idleAnim.setKeys([
-        { frame: 0, value: petNode.position.y },
-        { frame: 60, value: petNode.position.y + 0.2 },
-        { frame: 120, value: petNode.position.y },
-      ])
-
-      const rotateAnim = new Animation(
-        "rotate",
-        "rotation.y",
-        60,
-        Animation.ANIMATIONTYPE_FLOAT,
-        Animation.ANIMATIONLOOPMODE_CYCLE,
-      )
-      rotateAnim.setKeys([
-        { frame: 0, value: 0 },
-        { frame: 300, value: Math.PI * 2 },
-      ])
-
-      petNode.animations = [idleAnim, rotateAnim]
-      scene.beginAnimation(petNode, 0, 300, true)
-
-      console.log(" Pet created successfully:", pet.name)
-    } catch (error) {
-      console.error(" Error creating pet:", error)
-    }
-  }
-
-  useEffect(() => {
-    if (!babylonLoaded || !canvasRef.current) return
-
-    console.log(" Initializing 3D scene...")
-
-    try {
-      const engine = new Engine(canvasRef.current, true, {
-        antialias: true,
-        adaptToDeviceRatio: true,
-      })
-      engineRef.current = engine
-
-      const scene = new Scene(engine)
-      sceneRef.current = scene
-
-      // Enhanced lighting setup
-      scene.clearColor = new Color4(0.02, 0.02, 0.1, 1)
-
-      const hemisphericLight = new HemisphericLight("hemi", new Vector3(0, 1, 0), scene)
-      hemisphericLight.intensity = 0.6
-
-      const directionalLight = new DirectionalLight("dir", new Vector3(-1, -1, -1), scene)
-      directionalLight.intensity = 0.8
-      directionalLight.diffuse = new Color3(1, 0.9, 0.8)
-
-      // Enhanced camera with better positioning
-      const camera = new ArcRotateCamera("cam", Math.PI / 2, Math.PI / 3, 8, Vector3.Zero(), scene)
-      camera.attachControl(canvasRef.current, true)
-      camera.setTarget(new Vector3(0, 1, 0))
-      camera.lowerRadiusLimit = 4
-      camera.upperRadiusLimit = 15
-
-      // Enhanced ground
-      const ground = MeshBuilder.CreateGround("ground", { width: 20, height: 20 }, scene)
-      const groundMaterial = createMaterial(scene, "groundMat", new Color3(0.1, 0.15, 0.2))
-      ground.material = groundMaterial
-
-      createEnhancedPet(scene, selectedPet)
-
-      engine.runRenderLoop(() => {
-        scene.render()
-      })
-
-      const handleResize = () => {
-        engine.resize()
-      }
-      window.addEventListener("resize", handleResize)
-
-      console.log(" 3D scene initialized successfully")
-
-      return () => {
-        window.removeEventListener("resize", handleResize)
-        engine.dispose()
-      }
-    } catch (error) {
-      console.error(" Error initializing 3D scene:", error)
-    }
-  }, [babylonLoaded])
-
-  // Update pet when selection changes
-  useEffect(() => {
-    if (sceneRef.current && babylonLoaded) {
-      createEnhancedPet(sceneRef.current, selectedPet)
-    }
-  }, [selectedPet, babylonLoaded])
+  const [isInteracting, setIsInteracting] = useState(false)
+  const [playerLevel, setPlayerLevel] = useState(12)
+  const [playerExp, setPlayerExp] = useState(680)
 
   const interact = useCallback(
-    (action: "hug" | "feed" | "play" | "train") => {
-      if (!petRef.current || !sceneRef.current) return
-
-      const scene = sceneRef.current
-      const mesh = petRef.current
+    (action: "hug" | "feed" | "play" | "train" | "battle") => {
       let coinsEarned = 0
       let expGained = 0
 
-      console.log(" Interaction:", action)
+      setIsInteracting(true)
+      setTimeout(() => setIsInteracting(false), 2000)
 
       switch (action) {
         case "hug":
-          coinsEarned = 10
-          expGained = 5
-
-          // Gentle sway animation
-          const hugAnim = new Animation(
-            "hug",
-            "rotation.z",
-            60,
-            Animation.ANIMATIONTYPE_FLOAT,
-            Animation.ANIMATIONLOOPMODE_CYCLE,
-          )
-          hugAnim.setKeys([
-            { frame: 0, value: 0 },
-            { frame: 15, value: 0.2 },
-            { frame: 30, value: -0.2 },
-            { frame: 45, value: 0 },
-          ])
-          mesh.animations = [hugAnim]
-          scene.beginAnimation(mesh, 0, 45, false)
-
-          toast({ title: "💖 Hugged!", description: `${selectedPet.name} feels loved! +${coinsEarned} coins` })
+          coinsEarned = 15
+          expGained = 8
+          toast({
+            title: "💖 Loving Bond!",
+            description: `${selectedPet.name} feels deeply loved! +${coinsEarned} coins, +${expGained} exp`,
+          })
           break
 
         case "feed":
-          coinsEarned = 15
-          expGained = 8
-
-          // Bounce animation
-          const feedAnim = new Animation(
-            "feed",
-            "position.y",
-            60,
-            Animation.ANIMATIONTYPE_FLOAT,
-            Animation.ANIMATIONLOOPMODE_CYCLE,
-          )
-          feedAnim.setKeys([
-            { frame: 0, value: mesh.position.y },
-            { frame: 20, value: mesh.position.y + 0.4 },
-            { frame: 40, value: mesh.position.y },
-          ])
-          mesh.animations = [feedAnim]
-          scene.beginAnimation(mesh, 0, 40, false)
-
-          toast({ title: "🍎 Fed!", description: `${selectedPet.name} is satisfied! +${coinsEarned} coins` })
+          coinsEarned = 25
+          expGained = 12
+          toast({
+            title: "🍎 Nourished!",
+            description: `${selectedPet.name} is well-fed and energized! +${coinsEarned} coins, +${expGained} exp`,
+          })
           break
 
         case "play":
-          coinsEarned = 20
-          expGained = 12
-
-          // Spin and jump animation
-          const playAnim = new Animation(
-            "play",
-            "rotation.y",
-            60,
-            Animation.ANIMATIONTYPE_FLOAT,
-            Animation.ANIMATIONLOOPMODE_CYCLE,
-          )
-          playAnim.setKeys([
-            { frame: 0, value: 0 },
-            { frame: 30, value: Math.PI * 2 },
-          ])
-          const jumpAnim = new Animation(
-            "jump",
-            "position.y",
-            60,
-            Animation.ANIMATIONTYPE_FLOAT,
-            Animation.ANIMATIONLOOPMODE_CYCLE,
-          )
-          jumpAnim.setKeys([
-            { frame: 0, value: mesh.position.y },
-            { frame: 15, value: mesh.position.y + 0.6 },
-            { frame: 30, value: mesh.position.y },
-          ])
-          mesh.animations = [playAnim, jumpAnim]
-          scene.beginAnimation(mesh, 0, 30, false)
-
-          toast({ title: "🎾 Played!", description: `${selectedPet.name} had fun! +${coinsEarned} coins` })
+          coinsEarned = 35
+          expGained = 18
+          toast({
+            title: "🎾 Joyful Play!",
+            description: `${selectedPet.name} had an amazing time! +${coinsEarned} coins, +${expGained} exp`,
+          })
           break
 
         case "train":
-          coinsEarned = 25
-          expGained = 20
+          coinsEarned = 45
+          expGained = 25
+          toast({
+            title: "💪 Intense Training!",
+            description: `${selectedPet.name} grew significantly stronger! +${coinsEarned} coins, +${expGained} exp`,
+          })
+          break
 
-          // Power-up animation with scaling
-          const trainAnim = new Animation(
-            "train",
-            "scaling",
-            60,
-            Animation.ANIMATIONTYPE_VECTOR3,
-            Animation.ANIMATIONLOOPMODE_CYCLE,
-          )
-          trainAnim.setKeys([
-            { frame: 0, value: new Vector3(1, 1, 1) },
-            { frame: 20, value: new Vector3(1.2, 1.2, 1.2) },
-            { frame: 40, value: new Vector3(1, 1, 1) },
-          ])
-          mesh.animations = [trainAnim]
-          scene.beginAnimation(mesh, 0, 40, false)
-
-          toast({ title: "💪 Trained!", description: `${selectedPet.name} grew stronger! +${coinsEarned} coins` })
+        case "battle":
+          coinsEarned = 60
+          expGained = 35
+          toast({
+            title: "⚔️ Victory!",
+            description: `${selectedPet.name} won the battle! +${coinsEarned} coins, +${expGained} exp`,
+          })
           break
       }
 
       setCoins((prev) => prev + coinsEarned)
+      setPlayerExp((prev) => prev + expGained)
       setLastInteraction(action)
 
-      // Update pet stats (simplified for demo)
+      // Level up logic
+      if (playerExp + expGained >= 1000) {
+        setPlayerLevel((prev) => prev + 1)
+        setPlayerExp((prev) => prev + expGained - 1000)
+        toast({
+          title: "🎉 Level Up!",
+          description: `Congratulations! You reached level ${playerLevel + 1}!`,
+        })
+      }
+
+      // Update pet stats
       setSelectedPet((prev) => ({
         ...prev,
         experience: prev.experience + expGained,
         stats: {
           ...prev.stats,
-          happiness: Math.min(100, prev.stats.happiness + 5),
-          energy: action === "train" ? Math.max(0, prev.stats.energy - 10) : Math.min(100, prev.stats.energy + 3),
+          happiness: Math.min(100, prev.stats.happiness + Math.floor(Math.random() * 10) + 5),
+          energy:
+            action === "train" || action === "battle"
+              ? Math.max(0, prev.stats.energy - 15)
+              : Math.min(100, prev.stats.energy + 5),
         },
       }))
     },
-    [selectedPet],
+    [selectedPet, playerLevel, playerExp],
   )
 
   const getRarityColor = (rarity: string) => {
@@ -518,30 +277,51 @@ export default function PremiumNFTPetGame() {
       case "Legendary":
         return "bg-yellow-600"
       case "Mythic":
-        return "bg-gradient-to-r from-pink-500 to-purple-600"
+        return "bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500"
       default:
         return "bg-gray-500"
     }
   }
 
+  const getRarityGlow = (rarity: string) => {
+    switch (rarity) {
+      case "Legendary":
+        return "shadow-lg shadow-yellow-500/50"
+      case "Mythic":
+        return "shadow-xl shadow-purple-500/50 animate-pulse"
+      default:
+        return ""
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Header */}
-      <div className="bg-card/80 backdrop-blur-sm border-b border-border/50 p-4">
+      {/* Enhanced Header */}
+      <div className="bg-card/90 backdrop-blur-md border-b border-border/50 p-4 shadow-lg">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex items-center gap-3">
-            <Crown className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent font-[var(--font-playfair)]">
-              CryptoCreatures
-            </h1>
-          </div>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 bg-primary/10 px-3 py-1 rounded-full">
-              <Coins className="h-4 w-4 text-primary" />
-              <span className="font-semibold text-primary-foreground">{coins}</span>
+            <div className="relative">
+              <Crown className="h-10 w-10 text-primary animate-pulse" />
+              <Sparkles className="h-4 w-4 text-yellow-400 absolute -top-1 -right-1 animate-spin" />
             </div>
-            <Badge variant="secondary" className="bg-accent/20 text-accent-foreground">
-              Level {selectedPet.level}
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                CryptoCreatures Elite
+              </h1>
+              <p className="text-sm text-muted-foreground">Next-Gen NFT Pet Universe</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2 bg-gradient-to-r from-primary/20 to-accent/20 px-4 py-2 rounded-full border border-primary/30">
+              <Coins className="h-5 w-5 text-primary animate-bounce" />
+              <span className="font-bold text-primary-foreground text-lg">{coins.toLocaleString()}</span>
+            </div>
+            <div className="flex items-center gap-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 px-4 py-2 rounded-full border border-purple-500/30">
+              <Star className="h-5 w-5 text-purple-400" />
+              <span className="font-semibold text-purple-100">Level {playerLevel}</span>
+            </div>
+            <Badge variant="secondary" className="bg-accent/30 text-accent-foreground px-3 py-1">
+              {selectedPet.name}
             </Badge>
           </div>
         </div>
@@ -549,38 +329,47 @@ export default function PremiumNFTPetGame() {
 
       <div className="max-w-7xl mx-auto p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6">
-            <TabsTrigger value="game" className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4" />
+          <TabsList className="grid w-full grid-cols-5 mb-6 bg-card/50 backdrop-blur-sm">
+            <TabsTrigger value="game" className="flex items-center gap-2 data-[state=active]:bg-primary/20">
+              <Gamepad2 className="h-4 w-4" />
               Game
             </TabsTrigger>
-            <TabsTrigger value="collection" className="flex items-center gap-2">
+            <TabsTrigger value="collection" className="flex items-center gap-2 data-[state=active]:bg-primary/20">
               <Star className="h-4 w-4" />
               Collection
             </TabsTrigger>
-            <TabsTrigger value="breeding" className="flex items-center gap-2">
+            <TabsTrigger value="breeding" className="flex items-center gap-2 data-[state=active]:bg-primary/20">
               <Heart className="h-4 w-4" />
               Breeding
             </TabsTrigger>
-            <TabsTrigger value="achievements" className="flex items-center gap-2">
+            <TabsTrigger value="battle" className="flex items-center gap-2 data-[state=active]:bg-primary/20">
               <Trophy className="h-4 w-4" />
+              Arena
+            </TabsTrigger>
+            <TabsTrigger value="achievements" className="flex items-center gap-2 data-[state=active]:bg-primary/20">
+              <Award className="h-4 w-4" />
               Achievements
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="game" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* 3D Viewport */}
+              {/* Enhanced 3D Viewport */}
               <div className="lg:col-span-2">
-                <Card className="overflow-hidden">
+                <Card className={`overflow-hidden ${getRarityGlow(selectedPet.rarity)}`}>
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center gap-2">
-                        <Badge className={`${getRarityColor(selectedPet.rarity)} text-white`}>
+                      <div className="flex items-center gap-3">
+                        <Badge className={`${getRarityColor(selectedPet.rarity)} text-white px-3 py-1`}>
                           {selectedPet.rarity}
                         </Badge>
-                        {selectedPet.name}
-                      </CardTitle>
+                        <div>
+                          <CardTitle className="text-xl">{selectedPet.name}</CardTitle>
+                          <p className="text-sm text-muted-foreground">
+                            {selectedPet.type} • Level {selectedPet.level}
+                          </p>
+                        </div>
+                      </div>
                       <div className="flex gap-2">
                         {pets.map((pet) => (
                           <Button
@@ -597,41 +386,67 @@ export default function PremiumNFTPetGame() {
                     </div>
                   </CardHeader>
                   <CardContent className="p-0">
-                    {!babylonLoaded ? (
-                      <div className="w-full h-[500px] bg-gradient-to-b from-slate-800 to-slate-900 flex items-center justify-center">
-                        <div className="text-center">
-                          <Sparkles className="h-8 w-8 animate-spin mx-auto mb-2 text-primary" />
-                          <p className="text-muted-foreground">Loading 3D Engine...</p>
-                        </div>
-                      </div>
-                    ) : (
-                      <canvas
-                        ref={canvasRef}
-                        className="w-full h-[500px] bg-gradient-to-b from-slate-800 to-slate-900"
-                      />
-                    )}
+                    <div className="w-full h-[500px] bg-gradient-to-b from-slate-800 to-slate-900">
+                      <Canvas shadows>
+                        <Suspense fallback={null}>
+                          <Scene
+                            selectedPet={selectedPet}
+                            isInteracting={isInteracting}
+                            lastInteraction={lastInteraction}
+                          />
+                        </Suspense>
+                      </Canvas>
+                    </div>
                   </CardContent>
                 </Card>
               </div>
 
-              {/* Pet Stats & Controls */}
+              {/* Enhanced Controls */}
               <div className="space-y-4">
-                <Card>
+                {/* Player Progress */}
+                <Card className="bg-gradient-to-br from-card/80 to-card/60 backdrop-blur-sm">
                   <CardHeader>
-                    <CardTitle className="text-lg">Pet Stats</CardTitle>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Star className="h-5 w-5 text-primary" />
+                      Player Progress
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span>Level {playerLevel}</span>
+                          <span>{playerExp}/1000 EXP</span>
+                        </div>
+                        <Progress value={(playerExp / 1000) * 100} className="h-3" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Pet Stats */}
+                <Card className="bg-gradient-to-br from-card/80 to-card/60 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Pet Statistics</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-3">
                       <div>
                         <div className="flex justify-between text-sm mb-1">
-                          <span>Happiness</span>
+                          <span className="flex items-center gap-1">
+                            <Heart className="h-3 w-3 text-pink-500" />
+                            Happiness
+                          </span>
                           <span>{selectedPet.stats.happiness}/100</span>
                         </div>
                         <Progress value={selectedPet.stats.happiness} className="h-2" />
                       </div>
                       <div>
                         <div className="flex justify-between text-sm mb-1">
-                          <span>Energy</span>
+                          <span className="flex items-center gap-1">
+                            <Zap className="h-3 w-3 text-yellow-500" />
+                            Energy
+                          </span>
                           <span>{selectedPet.stats.energy}/100</span>
                         </div>
                         <Progress value={selectedPet.stats.energy} className="h-2" />
@@ -646,23 +461,24 @@ export default function PremiumNFTPetGame() {
                     </div>
 
                     <div className="grid grid-cols-3 gap-2 text-center text-sm">
-                      <div className="bg-muted p-2 rounded">
-                        <div className="font-semibold text-primary">{selectedPet.stats.strength}</div>
-                        <div className="text-muted-foreground">Strength</div>
+                      <div className="bg-gradient-to-b from-red-500/20 to-red-600/20 p-3 rounded-lg border border-red-500/30">
+                        <div className="font-bold text-red-400 text-lg">{selectedPet.stats.strength}</div>
+                        <div className="text-muted-foreground text-xs">Strength</div>
                       </div>
-                      <div className="bg-muted p-2 rounded">
-                        <div className="font-semibold text-accent">{selectedPet.stats.magic}</div>
-                        <div className="text-muted-foreground">Magic</div>
+                      <div className="bg-gradient-to-b from-purple-500/20 to-purple-600/20 p-3 rounded-lg border border-purple-500/30">
+                        <div className="font-bold text-purple-400 text-lg">{selectedPet.stats.magic}</div>
+                        <div className="text-muted-foreground text-xs">Magic</div>
                       </div>
-                      <div className="bg-muted p-2 rounded">
-                        <div className="font-semibold text-blue-500">{selectedPet.stats.speed}</div>
-                        <div className="text-muted-foreground">Speed</div>
+                      <div className="bg-gradient-to-b from-blue-500/20 to-blue-600/20 p-3 rounded-lg border border-blue-500/30">
+                        <div className="font-bold text-blue-400 text-lg">{selectedPet.stats.speed}</div>
+                        <div className="text-muted-foreground text-xs">Speed</div>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card>
+                {/* Enhanced Interactions */}
+                <Card className="bg-gradient-to-br from-card/80 to-card/60 backdrop-blur-sm">
                   <CardHeader>
                     <CardTitle className="text-lg">Interactions</CardTitle>
                   </CardHeader>
@@ -670,7 +486,7 @@ export default function PremiumNFTPetGame() {
                     <div className="grid grid-cols-2 gap-3">
                       <Button
                         onClick={() => interact("hug")}
-                        className="bg-pink-500 hover:bg-pink-600 text-white"
+                        className="bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white shadow-lg"
                         size="sm"
                       >
                         <Heart className="h-4 w-4 mr-1" />
@@ -678,7 +494,7 @@ export default function PremiumNFTPetGame() {
                       </Button>
                       <Button
                         onClick={() => interact("feed")}
-                        className="bg-green-500 hover:bg-green-600 text-white"
+                        className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg"
                         size="sm"
                       >
                         <Gift className="h-4 w-4 mr-1" />
@@ -686,7 +502,7 @@ export default function PremiumNFTPetGame() {
                       </Button>
                       <Button
                         onClick={() => interact("play")}
-                        className="bg-blue-500 hover:bg-blue-600 text-white"
+                        className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg"
                         size="sm"
                       >
                         <Sparkles className="h-4 w-4 mr-1" />
@@ -694,34 +510,49 @@ export default function PremiumNFTPetGame() {
                       </Button>
                       <Button
                         onClick={() => interact("train")}
-                        className="bg-orange-500 hover:bg-orange-600 text-white"
+                        className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg"
                         size="sm"
                       >
                         <Zap className="h-4 w-4 mr-1" />
                         Train
                       </Button>
+                      <Button
+                        onClick={() => interact("battle")}
+                        className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg col-span-2"
+                        size="sm"
+                        disabled={selectedPet.stats.energy < 20}
+                      >
+                        <Trophy className="h-4 w-4 mr-1" />
+                        Battle Arena
+                      </Button>
                     </div>
                     {lastInteraction && (
-                      <div className="mt-3 text-sm text-muted-foreground text-center">
-                        Last action: {lastInteraction}
+                      <div className="mt-3 text-sm text-center p-2 bg-primary/10 rounded-lg">
+                        <span className="text-primary font-medium">Last: {lastInteraction}</span>
                       </div>
                     )}
                   </CardContent>
                 </Card>
 
-                <Card>
+                {/* Pet Traits */}
+                <Card className="bg-gradient-to-br from-card/80 to-card/60 backdrop-blur-sm">
                   <CardHeader>
-                    <CardTitle className="text-lg">Pet Traits</CardTitle>
+                    <CardTitle className="text-lg">Special Traits</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 mb-3">
                       {selectedPet.traits.map((trait, index) => (
-                        <Badge key={index} variant="secondary" className="text-xs">
+                        <Badge key={index} variant="secondary" className="text-xs bg-accent/20 text-accent-foreground">
                           {trait}
                         </Badge>
                       ))}
                     </div>
-                    <div className="mt-3 text-sm text-muted-foreground">Value: {selectedPet.value} ETH</div>
+                    <div className="text-sm text-muted-foreground border-t pt-3">
+                      <div className="flex justify-between items-center">
+                        <span>Market Value:</span>
+                        <span className="font-bold text-primary">{selectedPet.value} ETH</span>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               </div>
@@ -731,7 +562,10 @@ export default function PremiumNFTPetGame() {
           <TabsContent value="collection" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {pets.map((pet) => (
-                <Card key={pet.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                <Card
+                  key={pet.id}
+                  className={`overflow-hidden hover:shadow-xl transition-all duration-300 ${getRarityGlow(pet.rarity)}`}
+                >
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg">{pet.name}</CardTitle>
@@ -741,7 +575,7 @@ export default function PremiumNFTPetGame() {
                   <CardContent>
                     <div className="space-y-3">
                       <div className="text-sm text-muted-foreground">
-                        Type: {pet.type} • Level {pet.level}
+                        {pet.type} • Level {pet.level}
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div>Happiness: {pet.stats.happiness}</div>
@@ -749,14 +583,26 @@ export default function PremiumNFTPetGame() {
                         <div>Strength: {pet.stats.strength}</div>
                         <div>Magic: {pet.stats.magic}</div>
                       </div>
+                      <div className="flex flex-wrap gap-1">
+                        {pet.traits.slice(0, 2).map((trait, index) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {trait}
+                          </Badge>
+                        ))}
+                        {pet.traits.length > 2 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{pet.traits.length - 2} more
+                          </Badge>
+                        )}
+                      </div>
                       <div className="flex justify-between items-center pt-2">
-                        <span className="text-sm font-semibold">{pet.value} ETH</span>
+                        <span className="text-sm font-semibold text-primary">{pet.value} ETH</span>
                         <Button
                           size="sm"
                           onClick={() => setSelectedPet(pet)}
                           variant={selectedPet.id === pet.id ? "default" : "outline"}
                         >
-                          {selectedPet.id === pet.id ? "Selected" : "Select"}
+                          {selectedPet.id === pet.id ? "Active" : "Select"}
                         </Button>
                       </div>
                     </div>
@@ -785,34 +631,70 @@ export default function PremiumNFTPetGame() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="battle" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">Battle Arena</CardTitle>
+                <p className="text-muted-foreground">Pit your pets against others in thrilling battles</p>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-12 text-muted-foreground">
+                  <Trophy className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                  <h3 className="text-lg font-semibold mb-2">Battle System</h3>
+                  <p>Engage in strategic battles and earn rewards</p>
+                  <Button className="mt-4" disabled>
+                    Coming Soon
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="achievements" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {ACHIEVEMENTS.map((achievement) => (
-                <Card key={achievement.id} className={achievement.unlocked ? "border-primary" : ""}>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Trophy
-                          className={`h-5 w-5 ${achievement.unlocked ? "text-primary" : "text-muted-foreground"}`}
-                        />
-                        {achievement.name}
-                      </CardTitle>
-                      {achievement.unlocked && <Badge className="bg-primary text-primary-foreground">Unlocked</Badge>}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground mb-3">{achievement.description}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold">Reward: {achievement.reward} coins</span>
-                      {achievement.unlocked && (
-                        <Button size="sm" variant="outline" disabled>
-                          Claimed
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              {ENHANCED_ACHIEVEMENTS.map((achievement) => {
+                const IconComponent = achievement.icon
+                return (
+                  <Card
+                    key={achievement.id}
+                    className={`${achievement.unlocked ? "border-primary bg-primary/5" : "opacity-75"} transition-all duration-300`}
+                  >
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg flex items-center gap-3">
+                          <IconComponent
+                            className={`h-6 w-6 ${achievement.unlocked ? "text-primary" : "text-muted-foreground"}`}
+                          />
+                          {achievement.name}
+                        </CardTitle>
+                        {achievement.unlocked && (
+                          <Badge className="bg-primary text-primary-foreground">
+                            <Trophy className="h-3 w-3 mr-1" />
+                            Unlocked
+                          </Badge>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground mb-3">{achievement.description}</p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Coins className="h-4 w-4 text-primary" />
+                          <span className="font-semibold">{achievement.reward} coins</span>
+                        </div>
+                        {achievement.unlocked ? (
+                          <Button size="sm" variant="outline" disabled>
+                            <Trophy className="h-3 w-3 mr-1" />
+                            Claimed
+                          </Button>
+                        ) : (
+                          <Badge variant="secondary">Locked</Badge>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
             </div>
           </TabsContent>
         </Tabs>
