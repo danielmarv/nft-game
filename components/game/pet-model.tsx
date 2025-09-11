@@ -1,9 +1,6 @@
 "use client"
 
-import { useRef, useMemo } from "react"
-import { useFrame } from "@react-three/fiber"
-import { Text, Sphere, Box, Cylinder, Cone } from "@react-three/drei"
-import * as THREE from "three"
+import { useEffect, useState } from "react"
 
 interface NFTPet {
   id: string
@@ -27,177 +24,182 @@ interface EnhancedPetModelProps {
 }
 
 export function EnhancedPetModel({ pet, isInteracting, lastInteraction }: EnhancedPetModelProps) {
-  const groupRef = useRef<THREE.Group>(null)
-  const bodyRef = useRef<THREE.Mesh>(null)
-  const eyesRef = useRef<THREE.Group>(null)
+  const [animationClass, setAnimationClass] = useState("")
 
-  // Enhanced color schemes based on pet type and rarity
-  const colors = useMemo(() => {
-    const baseColors = {
-      Dragon: { primary: "#ff4444", secondary: "#cc2222", accent: "#ff6666" },
-      Unicorn: { primary: "#ffffff", secondary: "#f0f0ff", accent: "#e6e6ff" },
-      Phoenix: { primary: "#ff8800", secondary: "#ff6600", accent: "#ffaa44" },
-      Griffin: { primary: "#8b4513", secondary: "#654321", accent: "#a0522d" },
-      Pegasus: { primary: "#f5f5f5", secondary: "#e0e0e0", accent: "#ffffff" },
-    }
-
-    const rarityMultipliers = {
-      Common: 1.0,
-      Rare: 1.1,
-      Epic: 1.2,
-      Legendary: 1.3,
-      Mythic: 1.5,
-    }
-
-    const base = baseColors[pet.type]
-    const multiplier = rarityMultipliers[pet.rarity]
-
-    return {
-      primary: base.primary,
-      secondary: base.secondary,
-      accent: base.accent,
-      glow: pet.rarity === "Mythic" ? "#ff00ff" : pet.rarity === "Legendary" ? "#ffff00" : base.accent,
-      intensity: multiplier,
-    }
-  }, [pet.type, pet.rarity])
-
-  // Floating animation
-  useFrame((state) => {
-    if (groupRef.current) {
-      groupRef.current.position.y = Math.sin(state.clock.elapsedTime * 2) * 0.1
-      groupRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.1
-    }
-
-    // Interaction animations
-    if (isInteracting && bodyRef.current) {
+  useEffect(() => {
+    if (isInteracting && lastInteraction) {
       switch (lastInteraction) {
         case "hug":
-          bodyRef.current.scale.setScalar(1 + Math.sin(state.clock.elapsedTime * 8) * 0.05)
+          setAnimationClass("animate-pulse")
           break
         case "feed":
-          bodyRef.current.position.y = Math.sin(state.clock.elapsedTime * 6) * 0.1
+          setAnimationClass("animate-bounce")
           break
         case "play":
-          groupRef.current.rotation.y += 0.1
+          setAnimationClass("animate-spin")
           break
         case "train":
-          bodyRef.current.scale.setScalar(1 + Math.sin(state.clock.elapsedTime * 10) * 0.1)
+          setAnimationClass("animate-ping")
+          break
+        case "battle":
+          setAnimationClass("animate-pulse")
           break
       }
-    }
 
-    // Eye blinking animation
-    if (eyesRef.current) {
-      const blinkTime = Math.sin(state.clock.elapsedTime * 3)
-      if (blinkTime > 0.95) {
-        eyesRef.current.scale.y = 0.1
-      } else {
-        eyesRef.current.scale.y = 1
-      }
+      const timer = setTimeout(() => setAnimationClass(""), 2000)
+      return () => clearTimeout(timer)
     }
-  })
+  }, [isInteracting, lastInteraction])
+
+  const getPetEmoji = (type: string) => {
+    switch (type) {
+      case "Dragon":
+        return "🐉"
+      case "Unicorn":
+        return "🦄"
+      case "Phoenix":
+        return "🔥"
+      case "Griffin":
+        return "🦅"
+      case "Pegasus":
+        return "🐴"
+      default:
+        return "🐾"
+    }
+  }
+
+  const getRarityGlow = (rarity: string) => {
+    switch (rarity) {
+      case "Common":
+        return "shadow-lg shadow-gray-500/50"
+      case "Rare":
+        return "shadow-lg shadow-blue-500/50"
+      case "Epic":
+        return "shadow-lg shadow-purple-500/50"
+      case "Legendary":
+        return "shadow-xl shadow-yellow-500/70 animate-pulse"
+      case "Mythic":
+        return "shadow-2xl shadow-pink-500/80 animate-pulse"
+      default:
+        return ""
+    }
+  }
+
+  const getRarityBorder = (rarity: string) => {
+    switch (rarity) {
+      case "Common":
+        return "border-gray-400"
+      case "Rare":
+        return "border-blue-400"
+      case "Epic":
+        return "border-purple-400"
+      case "Legendary":
+        return "border-yellow-400"
+      case "Mythic":
+        return "border-gradient-to-r from-pink-400 via-purple-400 to-cyan-400"
+      default:
+        return "border-gray-400"
+    }
+  }
 
   return (
-    <group ref={groupRef}>
-      {/* Main body */}
-      <Sphere ref={bodyRef} args={[0.8, 32, 32]} position={[0, 0, 0]}>
-        <meshPhongMaterial
-          color={colors.primary}
-          shininess={100}
-          emissive={pet.rarity === "Mythic" ? colors.glow : "#000000"}
-          emissiveIntensity={pet.rarity === "Mythic" ? 0.2 : 0}
-        />
-      </Sphere>
+    <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-b from-slate-800/50 to-slate-900/50">
+      {/* Pet Container */}
+      <div className={`relative ${animationClass}`}>
+        {/* Main Pet Display */}
+        <div
+          className={`
+          relative w-48 h-48 rounded-full border-4 ${getRarityBorder(pet.rarity)} ${getRarityGlow(pet.rarity)}
+          bg-gradient-to-br from-slate-700 via-slate-600 to-slate-800
+          flex items-center justify-center transform hover:scale-105 transition-all duration-300
+          ${pet.rarity === "Mythic" ? "animate-pulse" : ""}
+        `}
+        >
+          {/* Pet Emoji/Icon */}
+          <div className="text-8xl filter drop-shadow-2xl">{getPetEmoji(pet.type)}</div>
 
-      {/* Head */}
-      <Sphere args={[0.5, 32, 32]} position={[0, 1, 0.2]}>
-        <meshPhongMaterial color={colors.primary} shininess={100} />
-      </Sphere>
+          {/* Rarity Sparkles for high-tier pets */}
+          {(pet.rarity === "Legendary" || pet.rarity === "Mythic") && (
+            <>
+              <div className="absolute top-2 right-2 text-yellow-400 animate-ping">✨</div>
+              <div className="absolute bottom-2 left-2 text-purple-400 animate-ping delay-500">✨</div>
+              <div className="absolute top-1/2 left-2 text-cyan-400 animate-ping delay-1000">✨</div>
+            </>
+          )}
+        </div>
 
-      {/* Eyes */}
-      <group ref={eyesRef}>
-        <Sphere args={[0.08, 16, 16]} position={[-0.15, 1.1, 0.45]}>
-          <meshBasicMaterial color="#00aaff" />
-        </Sphere>
-        <Sphere args={[0.08, 16, 16]} position={[0.15, 1.1, 0.45]}>
-          <meshBasicMaterial color="#00aaff" />
-        </Sphere>
-      </group>
+        {/* Pet Name */}
+        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2">
+          <div className="bg-black/70 backdrop-blur-sm px-4 py-2 rounded-full border border-primary/30">
+            <span className="text-white font-bold text-lg">{pet.name}</span>
+          </div>
+        </div>
 
-      {/* Type-specific features */}
-      {pet.type === "Dragon" && (
-        <>
-          {/* Wings */}
-          <Box args={[0.1, 0.8, 1.2]} position={[-0.6, 0.2, -0.3]} rotation={[0, 0, Math.PI / 6]}>
-            <meshPhongMaterial color={colors.secondary} transparent opacity={0.8} />
-          </Box>
-          <Box args={[0.1, 0.8, 1.2]} position={[0.6, 0.2, -0.3]} rotation={[0, 0, -Math.PI / 6]}>
-            <meshPhongMaterial color={colors.secondary} transparent opacity={0.8} />
-          </Box>
+        {/* Level Badge */}
+        <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2">
+          <div className="bg-primary/90 backdrop-blur-sm px-3 py-1 rounded-full border border-primary-foreground/20">
+            <span className="text-primary-foreground font-semibold text-sm">Level {pet.level}</span>
+          </div>
+        </div>
 
-          {/* Spikes */}
-          {[0, 1, 2].map((i) => (
-            <Cone key={i} args={[0.1, 0.3]} position={[0, 0.5 + i * 0.2, -0.8 - i * 0.1]}>
-              <meshPhongMaterial color={colors.accent} />
-            </Cone>
-          ))}
-        </>
-      )}
+        {/* Type-specific Effects */}
+        {pet.type === "Dragon" && (
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-4 left-4 text-red-500 animate-bounce delay-300">🔥</div>
+            <div className="absolute top-4 right-4 text-orange-500 animate-bounce delay-700">🔥</div>
+          </div>
+        )}
 
-      {pet.type === "Unicorn" && (
-        <>
-          {/* Horn */}
-          <Cylinder args={[0.02, 0.15, 0.6]} position={[0, 1.5, 0]} rotation={[Math.PI / 12, 0, 0]}>
-            <meshPhongMaterial color="#ffd700" emissive="#ffaa00" emissiveIntensity={0.3} shininess={200} />
-          </Cylinder>
-        </>
-      )}
+        {pet.type === "Phoenix" && (
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-orange-400 animate-ping">🔥</div>
+            <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-red-400 animate-ping delay-500">
+              🔥
+            </div>
+          </div>
+        )}
 
-      {pet.type === "Phoenix" && (
-        <>
-          {/* Flame crown */}
-          {[0, 1, 2, 3, 4].map((i) => (
-            <Cylinder
-              key={i}
-              args={[0.05, 0.15, 0.4]}
-              position={[Math.sin((i * Math.PI * 2) / 5) * 0.3, 1.4, Math.cos((i * Math.PI * 2) / 5) * 0.3]}
-            >
-              <meshBasicMaterial color="#ff4400" emissive="#ff6600" emissiveIntensity={0.5} />
-            </Cylinder>
-          ))}
-        </>
-      )}
+        {pet.type === "Unicorn" && (
+          <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 text-2xl animate-pulse">🌟</div>
+        )}
 
-      {/* Pet name floating above */}
-      <Text
-        position={[0, 2, 0]}
-        fontSize={0.2}
-        color={colors.glow}
-        anchorX="center"
-        anchorY="middle"
-        font="/fonts/Geist-Bold.ttf"
-      >
-        {pet.name}
-      </Text>
+        {/* Interaction Feedback */}
+        {isInteracting && lastInteraction && (
+          <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 animate-bounce">
+            <div className="bg-primary/90 text-primary-foreground px-3 py-1 rounded-full text-sm font-medium">
+              {lastInteraction === "hug" && "💖 Hugged!"}
+              {lastInteraction === "feed" && "🍎 Fed!"}
+              {lastInteraction === "play" && "🎾 Playing!"}
+              {lastInteraction === "train" && "💪 Training!"}
+              {lastInteraction === "battle" && "⚔️ Battling!"}
+            </div>
+          </div>
+        )}
 
-      {/* Level indicator */}
-      <Text
-        position={[0, 1.8, 0]}
-        fontSize={0.15}
-        color="#ffffff"
-        anchorX="center"
-        anchorY="middle"
-        font="/fonts/Geist-Regular.ttf"
-      >
-        Level {pet.level}
-      </Text>
+        {/* Stats Indicators */}
+        <div className="absolute -right-16 top-1/2 transform -translate-y-1/2 space-y-2">
+          <div className="flex items-center gap-1 bg-black/50 px-2 py-1 rounded text-xs">
+            <span className="text-pink-400">❤️</span>
+            <span className="text-white">{pet.stats.happiness}</span>
+          </div>
+          <div className="flex items-center gap-1 bg-black/50 px-2 py-1 rounded text-xs">
+            <span className="text-yellow-400">⚡</span>
+            <span className="text-white">{pet.stats.energy}</span>
+          </div>
+          <div className="flex items-center gap-1 bg-black/50 px-2 py-1 rounded text-xs">
+            <span className="text-red-400">💪</span>
+            <span className="text-white">{pet.stats.strength}</span>
+          </div>
+        </div>
+      </div>
 
-      {/* Rarity glow effect for Mythic pets */}
-      {pet.rarity === "Mythic" && (
-        <Sphere args={[1.2, 32, 32]} position={[0, 0, 0]}>
-          <meshBasicMaterial color={colors.glow} transparent opacity={0.1} side={THREE.BackSide} />
-        </Sphere>
-      )}
-    </group>
+      {/* Background Effects */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Floating particles */}
+        <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-primary/30 rounded-full animate-ping delay-1000"></div>
+        <div className="absolute top-3/4 right-1/4 w-1 h-1 bg-accent/40 rounded-full animate-ping delay-2000"></div>
+        <div className="absolute bottom-1/4 left-1/3 w-1.5 h-1.5 bg-secondary/30 rounded-full animate-ping delay-3000"></div>
+      </div>
+    </div>
   )
 }

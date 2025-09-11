@@ -1,8 +1,6 @@
 "use client"
 
-import { useState, useCallback, Suspense } from "react"
-import { Canvas } from "@react-three/fiber"
-import { OrbitControls, Environment, PerspectiveCamera, Stars } from "@react-three/drei"
+import { useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -128,47 +126,6 @@ const ENHANCED_ACHIEVEMENTS = [
   },
   { id: 6, name: "Arena Master", description: "Achieve a 20-win streak", unlocked: false, reward: 2500, icon: Award },
 ]
-
-function Scene({
-  selectedPet,
-  isInteracting,
-  lastInteraction,
-}: {
-  selectedPet: NFTPet
-  isInteracting: boolean
-  lastInteraction: string | null
-}) {
-  return (
-    <>
-      <PerspectiveCamera makeDefault position={[0, 2, 6]} />
-      <OrbitControls
-        enablePan={false}
-        minDistance={3}
-        maxDistance={10}
-        minPolarAngle={Math.PI / 6}
-        maxPolarAngle={Math.PI / 2}
-      />
-
-      {/* Enhanced environment */}
-      <Environment preset="sunset" />
-      <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
-
-      {/* Lighting */}
-      <ambientLight intensity={0.4} />
-      <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
-      <pointLight position={[-10, -10, -5]} intensity={0.5} color="#4444ff" />
-
-      {/* Ground with better material */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1, 0]} receiveShadow>
-        <planeGeometry args={[20, 20]} />
-        <meshPhongMaterial color="#1a1a2e" shininess={100} />
-      </mesh>
-
-      {/* Enhanced pet model */}
-      <EnhancedPetModel pet={selectedPet} isInteracting={isInteracting} lastInteraction={lastInteraction} />
-    </>
-  )
-}
 
 export default function PremiumNFTPetGame() {
   const [pets] = useState<NFTPet[]>(ENHANCED_PETS)
@@ -387,15 +344,11 @@ export default function PremiumNFTPetGame() {
                   </CardHeader>
                   <CardContent className="p-0">
                     <div className="w-full h-[500px] bg-gradient-to-b from-slate-800 to-slate-900">
-                      <Canvas shadows>
-                        <Suspense fallback={null}>
-                          <Scene
-                            selectedPet={selectedPet}
-                            isInteracting={isInteracting}
-                            lastInteraction={lastInteraction}
-                          />
-                        </Suspense>
-                      </Canvas>
+                      <EnhancedPetModel
+                        pet={selectedPet}
+                        isInteracting={isInteracting}
+                        lastInteraction={lastInteraction}
+                      />
                     </div>
                   </CardContent>
                 </Card>
