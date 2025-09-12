@@ -26,11 +26,6 @@ export default function HomePage() {
               Home
             </Button>
           </Link>
-          <Link href="/gallery" passHref>
-            <Button variant="ghost" className="text-white hover:text-purple-300">
-              Gallery
-            </Button>
-          </Link>
           <Link href="/game" passHref>
             <Button variant="ghost" className="text-white hover:text-purple-300">
               Game
