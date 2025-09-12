@@ -1,7 +1,7 @@
 "use client"
 
 import { useUser } from "@stackframe/stack"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { AuthButton } from "@/components/auth/auth-button"
 import { AuthModal } from "@/components/auth/auth-modal"
@@ -15,30 +15,6 @@ export default function HomePage() {
   const [showAuthModal, setShowAuthModal] = useState(false)
   const { pets, isLoading: isLoadingNFTs } = useNFTs("pets")
   const [selectedPet, setSelectedPet] = useState<(typeof pets)[0] | null>(null)
-
-
-  // const gameFeatures = [
-  //   {
-  //     icon: <Gamepad2 className="h-8 w-8" />,
-  //     title: "Interactive Games",
-  //     description: "Play engaging card games and pet collection adventures",
-  //   },
-  //   {
-  //     icon: <Trophy className="h-8 w-8" />,
-  //     title: "NFT Rewards",
-  //     description: "Earn unique NFT cards and pets as you progress",
-  //   },
-  //   {
-  //     icon: <Coins className="h-8 w-8" />,
-  //     title: "Daily Rewards",
-  //     description: "Collect daily bonuses and special items",
-  //   },
-  //   {
-  //     icon: <Users className="h-8 w-8" />,
-  //     title: "Community",
-  //     description: "Trade and compete with other players",
-  //   },
-  // ]
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white">
@@ -55,14 +31,9 @@ export default function HomePage() {
               Gallery
             </Button>
           </Link>
-          <Link href="/game1" passHref>
+          <Link href="/game" passHref>
             <Button variant="ghost" className="text-white hover:text-purple-300">
-              Game 1
-            </Button>
-          </Link>
-          <Link href="/game2" passHref>
-            <Button variant="ghost" className="text-white hover:text-purple-300">
-              Game 2
+              Game
             </Button>
           </Link>
           <WalletConnectButton />
@@ -97,7 +68,6 @@ export default function HomePage() {
             </Link>
           </div>
         </section>
-
       </main>
 
       <footer className="container mx-auto px-4 py-6 text-center text-gray-500">
